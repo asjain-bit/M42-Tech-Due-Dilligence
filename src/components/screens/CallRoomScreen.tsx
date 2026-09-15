@@ -482,19 +482,19 @@ export const CallRoomScreen: React.FC<CallRoomScreenProps> = ({
                 Open Call Room
               </button>
 
-              <button
-                onClick={onBack}
-                className="text-xs text-center text-[#94a3b8] hover:text-[#0d212c] transition cursor-pointer bg-transparent border-0 mt-1"
-              >
-                ← Back to call details
-              </button>
-
-              {!hideChangeRole && (
+              {hideChangeRole ? (
+                <button
+                  onClick={onBack}
+                  className="text-xs text-center text-[#94a3b8] hover:text-[#0d212c] transition cursor-pointer bg-transparent border-0 mt-1"
+                >
+                  ← Back to call details
+                </button>
+              ) : (
                 <button
                   onClick={() => setVendorFlowStep('select_role')}
-                  className="text-xs text-center text-[#94a3b8] hover:text-[#0d212c] transition cursor-pointer bg-transparent border-0"
+                  className="text-xs text-center text-[#94a3b8] hover:text-[#0d212c] transition cursor-pointer bg-transparent border-0 mt-1"
                 >
-                  ← Change login role
+                  ← Back to Login Options
                 </button>
               )}
             </div>
