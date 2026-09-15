@@ -522,19 +522,29 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
           </div>
 
           <div className="flex items-center gap-3 pb-3">
-            <button
-              onClick={() => alert(`Downloading report for ${assessment.vendor}...`)}
-              className="px-4 py-2 rounded-xl border border-[#cbd5e1] hover:border-[#94a3b8] hover:bg-slate-50 text-[#0d212c] bg-white font-bold text-xs flex items-center gap-2 shadow-2xs cursor-pointer transition"
-            >
-              <Download className="w-4 h-4 text-[#0d212c]" />
-              <span>Download report</span>
-            </button>
-            <button
-              onClick={handleFinalize}
-              className="bg-[#0d212c] hover:bg-[#122e3d] text-white font-bold text-xs px-5 py-2 rounded-xl transition cursor-pointer shadow-2xs border-0"
-            >
-              Finalize
-            </button>
+            {currentStatus !== 'scheduled' && (
+              <button
+                onClick={() => alert(`Downloading report for ${assessment.vendor}...`)}
+                className={
+                  currentStatus === 'finalised'
+                    ? 'bg-[#0d212c] hover:bg-[#122e3d] text-white font-bold text-xs px-5 py-2 rounded-xl transition cursor-pointer shadow-2xs border-0 flex items-center gap-2'
+                    : 'px-4 py-2 rounded-xl border border-[#cbd5e1] hover:border-[#94a3b8] hover:bg-slate-50 text-[#0d212c] bg-white font-bold text-xs flex items-center gap-2 shadow-2xs cursor-pointer transition'
+                }
+              >
+                <Download
+                  className={`w-4 h-4 ${currentStatus === 'finalised' ? 'text-white' : 'text-[#0d212c]'}`}
+                />
+                <span>Download report</span>
+              </button>
+            )}
+            {currentStatus !== 'scheduled' && currentStatus !== 'finalised' && (
+              <button
+                onClick={handleFinalize}
+                className="bg-[#0d212c] hover:bg-[#122e3d] text-white font-bold text-xs px-5 py-2 rounded-xl transition cursor-pointer shadow-2xs border-0"
+              >
+                Finalize
+              </button>
+            )}
           </div>
         </div>
 

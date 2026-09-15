@@ -8,7 +8,7 @@
 'use client'
 
 import React, { useState, useMemo } from 'react'
-import { ChevronLeft, ChevronRight, Check, Search, Info } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Check, Search, Info, CheckCircle2 } from 'lucide-react'
 import { StatusChip } from '@/components/atoms/StatusChip'
 import { AgentData, AgentManagementProps, AgentVersionHistoryItem } from './AgentManagement.types'
 
@@ -395,11 +395,11 @@ export const AgentManagement: React.FC<AgentManagementProps> = ({
     <div
       className={`flex flex-col gap-5 w-full px-6 lg:px-10 py-4 font-sans text-[#0d212c] ${className}`}
     >
-      {/* Toast notification overlay */}
+      {/* Toast Notification — subtle light semantic styling */}
       {toastMessage && (
-        <div className="fixed top-20 right-8 z-50 bg-[#0d212c] text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2.5 text-xs font-semibold animate-in fade-in slide-in-from-top-3 border border-[#153443]">
-          <Check className="w-4 h-4 text-[#36c0c9]" />
-          <span>{toastMessage}</span>
+        <div className="fixed top-4 right-4 z-50 bg-[#f0fdf4] text-[#15803d] px-4 py-3 rounded-xl shadow-md border border-[#bbf7d0] flex items-center gap-3 animate-in slide-in-from-top duration-300">
+          <CheckCircle2 className="w-4 h-4 text-[#16a34a]" />
+          <span className="text-sm font-medium">{toastMessage}</span>
         </div>
       )}
 
