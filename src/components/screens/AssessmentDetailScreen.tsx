@@ -524,7 +524,7 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
           <div className="flex items-center gap-3 pb-3">
             {currentStatus !== 'scheduled' && (
               <button
-                onClick={() => alert(`Downloading report for ${assessment.vendor}...`)}
+                onClick={() => alert(`Downloading PDF report for ${assessment.vendor}...`)}
                 className={
                   currentStatus === 'finalised'
                     ? 'bg-[#0d212c] hover:bg-[#122e3d] text-white font-bold text-xs px-5 py-2 rounded-xl transition cursor-pointer shadow-2xs border-0 flex items-center gap-2'
@@ -534,7 +534,7 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
                 <Download
                   className={`w-4 h-4 ${currentStatus === 'finalised' ? 'text-white' : 'text-[#0d212c]'}`}
                 />
-                <span>Download report</span>
+                <span>Download PDF</span>
               </button>
             )}
             {currentStatus !== 'scheduled' && currentStatus !== 'finalised' && (
