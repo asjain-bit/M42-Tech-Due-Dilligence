@@ -1431,7 +1431,7 @@ export const VendorsScreen: React.FC = () => {
                       type="button"
                       disabled={
                         isAddingVendor ||
-                        (!findSearchQuery.trim() && !selectedSearchResult) ||
+                        !selectedSearchResult ||
                         findRecipients.length > 5
                       }
                       onClick={handleAddVendorFromFind}

@@ -47,7 +47,8 @@ export const QuestionnaireDetailScreen: React.FC<QuestionnaireDetailScreenProps>
   const [newAttachmentRequired, setNewAttachmentRequired] = useState(false)
 
   // Questions list
-  const [questions, setQuestions] = useState<QuestionItem[]>([
+  const [questions, setQuestions] = useState<QuestionItem[]>(
+    questionnaire.title === 'Presight Technical & Compliance' ? [] : [
     {
       id: 1,
       question:
@@ -258,7 +259,8 @@ export const QuestionnaireDetailScreen: React.FC<QuestionnaireDetailScreenProps>
                 </button>
                 <button
                   onClick={handlePublish}
-                  className="bg-[#0d212c] hover:bg-[#122e3d] text-white font-bold px-6 py-2 rounded-xl text-xs shadow-xs cursor-pointer transition border-0"
+                  disabled={questions.length === 0}
+                  className="bg-[#0d212c] hover:bg-[#122e3d] text-white font-bold px-6 py-2 rounded-xl text-xs shadow-xs cursor-pointer transition border-0 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Publish questionnaire
                 </button>
@@ -274,7 +276,8 @@ export const QuestionnaireDetailScreen: React.FC<QuestionnaireDetailScreenProps>
                 </button>
                 <button
                   onClick={handlePublish}
-                  className="bg-[#0d212c] hover:bg-[#122e3d] text-white font-bold px-6 py-2 rounded-xl text-xs shadow-xs cursor-pointer transition border-0"
+                  disabled={questions.length === 0}
+                  className="bg-[#0d212c] hover:bg-[#122e3d] text-white font-bold px-6 py-2 rounded-xl text-xs shadow-xs cursor-pointer transition border-0 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Publish questionnaire
                 </button>
@@ -310,7 +313,22 @@ export const QuestionnaireDetailScreen: React.FC<QuestionnaireDetailScreenProps>
 
       {/* Questions List */}
       <div className="w-full px-6 lg:px-10 mt-6 flex flex-col gap-5">
-        {questions.map((q, idx) => (
+        {questions.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-[#e2e8f0] p-12 text-center shadow-xs flex flex-col items-center justify-center gap-3">
+            <h3 className="text-[#0d212c] font-extrabold text-lg">No questions available</h3>
+            <p className="text-xs text-[#64748b] leading-relaxed max-w-sm">
+              Add at least one question to perform any action or publish the questionnaire.
+            </p>
+            <button
+              onClick={() => setShowAddQuestionModal(true)}
+              className="mt-2 bg-[#0d212c] hover:bg-[#122e3d] text-white font-bold py-2.5 px-6 rounded-xl text-xs flex items-center justify-center gap-2 shadow-xs transition cursor-pointer border-0"
+            >
+              <Plus className="w-4 h-4 text-white" />
+              <span>Add question</span>
+            </button>
+          </div>
+        ) : (
+          questions.map((q, idx) => (
           /* Requirement 3: Subtle grey border for question card in edit mode (no cyan highlight) */
           <div
             key={q.id}
@@ -413,7 +431,7 @@ export const QuestionnaireDetailScreen: React.FC<QuestionnaireDetailScreenProps>
               />
             </div>
           </div>
-        ))}
+        )))}
       </div>
 
       {/* Requirement 4: Add New Question Modal Popup */}
