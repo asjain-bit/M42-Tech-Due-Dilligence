@@ -294,7 +294,8 @@ export const QuestionnaireDetailScreen: React.FC<QuestionnaireDetailScreenProps>
               </button>
               <button
                 onClick={handleSaveOrEdit}
-                className="bg-[#36c0c9] hover:bg-[#2eb0b9] text-white font-bold px-6 py-2 rounded-xl text-xs cursor-pointer shadow-xs border-0 transition"
+                disabled={questions.length === 0}
+                className="bg-[#36c0c9] hover:bg-[#2eb0b9] text-white font-bold px-6 py-2 rounded-xl text-xs cursor-pointer shadow-xs border-0 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Save
               </button>
