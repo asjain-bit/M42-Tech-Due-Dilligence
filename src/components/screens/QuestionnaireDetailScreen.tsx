@@ -294,7 +294,7 @@ export const QuestionnaireDetailScreen: React.FC<QuestionnaireDetailScreenProps>
               </button>
               <button
                 onClick={handleSaveOrEdit}
-                disabled={questions.length === 0}
+                disabled={questions.length === 0 || questions.some(q => !q.question.trim() || !q.responseCue.trim())}
                 className="bg-[#36c0c9] hover:bg-[#2eb0b9] text-white font-bold px-6 py-2 rounded-xl text-xs cursor-pointer shadow-xs border-0 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Save
@@ -381,7 +381,7 @@ export const QuestionnaireDetailScreen: React.FC<QuestionnaireDetailScreenProps>
             {/* Requirement 1: QUESTION Input Field (View-only mode has no focus/click stroke interaction) */}
             <div className="flex flex-col gap-1.5">
               <label className="text-[11px] font-extrabold text-[#64748b] uppercase tracking-wider">
-                QUESTION
+                QUESTION <span className="text-red-500 font-bold">*</span>
               </label>
               <input
                 type="text"
@@ -400,7 +400,7 @@ export const QuestionnaireDetailScreen: React.FC<QuestionnaireDetailScreenProps>
             {/* Requirement 1: RESPONSE CUE Textarea (View-only mode has no focus/click stroke interaction) */}
             <div className="flex flex-col gap-1.5">
               <label className="text-[11px] font-extrabold text-[#64748b] uppercase tracking-wider">
-                RESPONSE CUE
+                RESPONSE CUE <span className="text-red-500 font-bold">*</span>
               </label>
               <textarea
                 value={q.responseCue}
