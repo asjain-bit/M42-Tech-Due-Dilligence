@@ -404,7 +404,27 @@ export const VendorsScreen: React.FC = () => {
     }
   }
 
-  // Handle Add Vendor from Find Flow (NO auto-population)
+  const handleCloseAddVendorModal = () => {
+    setShowAddVendorModal(false)
+    setFindSearchQuery('')
+    setFindWebsite('')
+    setSelectedSearchResult(null)
+    setHasSearched(false)
+    setIsSearchingVendor(false)
+    setFindRecipients([])
+    setFindRecipientInput('')
+    setFindRecipientError(null)
+    setManualDisplayName('')
+    setManualLegalName('')
+    setManualCountry('United Arab Emirates')
+    setManualWebsite('')
+    setManualRecipients([])
+    setManualRecipientInput('')
+    setManualRecipientError(null)
+    setOnboardingMode('find')
+  }
+
+  // Handle Add Vendor from Find Flow (Auto-populates website from selected vendor)
   const handleAddVendorFromFind = () => {
     if (findRecipients.length > 5) return
     const vendorTitle =
@@ -588,6 +608,15 @@ export const VendorsScreen: React.FC = () => {
           <button
             onClick={() => {
               setOnboardingMode('find')
+              setFindSearchQuery('')
+              setFindWebsite('')
+              setSelectedSearchResult(null)
+              setHasSearched(false)
+              setIsSearchingVendor(false)
+              setFindRecipients([])
+              setFindRecipientInput('')
+              setFindRecipientError(null)
+              setFindCountry('United Arab Emirates')
               setShowAddVendorModal(true)
             }}
             className="bg-[#0d212c] hover:bg-[#122e3d] text-white font-bold py-2 px-5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-xs transition cursor-pointer border-0 shrink-0"
@@ -1185,7 +1214,7 @@ export const VendorsScreen: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => setShowAddVendorModal(false)}
+                onClick={handleCloseAddVendorModal}
                 className="text-[#94a3b8] hover:text-[#0d212c] transition cursor-pointer border-0 bg-transparent p-0"
                 title="Close"
               >
@@ -1215,7 +1244,13 @@ export const VendorsScreen: React.FC = () => {
                         type="text"
                         placeholder="Type vendor name & press Enter..."
                         value={findSearchQuery}
-                        onChange={(e) => setFindSearchQuery(e.target.value)}
+                        onChange={(e) => {
+                          setFindSearchQuery(e.target.value)
+                          if (selectedSearchResult && e.target.value !== selectedSearchResult.name) {
+                            setSelectedSearchResult(null)
+                            setFindWebsite('')
+                          }
+                        }}
                         onKeyDown={handleFindVendorSearchKeyDown}
                         className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-[#e2e8f0] text-xs text-[#0d212c] outline-none focus:border-[#cbd5e1]"
                       />
@@ -1273,7 +1308,11 @@ export const VendorsScreen: React.FC = () => {
                                 setFindSearchQuery(res.name) // Adds vendor name to input field
                                 setHasSearched(false) // Closes the search results list
                                 if (res.domain) {
-                                  setFindWebsite(`https://${res.domain}`)
+                                  const formattedUrl =
+                                    res.domain.startsWith('http://') || res.domain.startsWith('https://')
+                                      ? res.domain
+                                      : `https://${res.domain}`
+                                  setFindWebsite(formattedUrl)
                                 }
                               }}
                               className={`p-3 rounded-xl border transition cursor-pointer flex items-center justify-between gap-3 ${
@@ -1327,7 +1366,7 @@ export const VendorsScreen: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Website URL on next line */}
+                  {/* Website URL on next line (Auto-populated and Non-editable) */}
                   <div>
                     <label className="block text-xs font-bold text-[#0d212c] mb-1.5">
                       Website URL
@@ -1336,8 +1375,9 @@ export const VendorsScreen: React.FC = () => {
                       type="text"
                       placeholder="https://"
                       value={findWebsite}
-                      onChange={(e) => setFindWebsite(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#e2e8f0] text-xs text-[#0d212c] outline-none focus:border-[#cbd5e1]"
+                      readOnly
+                      tabIndex={-1}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] text-xs text-[#64748b] cursor-not-allowed outline-none select-none"
                     />
                   </div>
 
@@ -1422,7 +1462,7 @@ export const VendorsScreen: React.FC = () => {
                   <div className="flex justify-end gap-3 pt-2">
                     <button
                       type="button"
-                      onClick={() => setShowAddVendorModal(false)}
+                      onClick={handleCloseAddVendorModal}
                       className="px-4 py-2.5 rounded-xl border border-[#e2e8f0] text-xs font-semibold text-[#0d212c] hover:bg-slate-50 cursor-pointer bg-transparent"
                     >
                       Cancel
@@ -1597,7 +1637,7 @@ export const VendorsScreen: React.FC = () => {
                   <div className="flex items-center gap-3">
                     <button
                       type="button"
-                      onClick={() => setShowAddVendorModal(false)}
+                      onClick={handleCloseAddVendorModal}
                       className="px-4 py-2.5 rounded-xl border border-[#e2e8f0] text-xs font-semibold text-[#0d212c] hover:bg-slate-50 cursor-pointer bg-transparent"
                     >
                       Cancel

@@ -1,11 +1,11 @@
 import type { Metadata } from 'next'
-import { Inter, Fraunces } from 'next/font/google'
+import { Poppins, Fraunces } from 'next/font/google'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import './globals.css'
 
-const inter = Inter({
+const poppins = Poppins({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
+  weight: ['300', '400', '500', '600', '700', '800', '900'],
   variable: '--font-sans',
   display: 'swap',
 })
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${fraunces.variable}`} data-theme="light">
+    <html lang="en" className={`${poppins.variable} ${fraunces.variable}`} data-theme="light">
       <head>
         <link rel="icon" href="/favicon-square.png" type="image/png" sizes="any" />
         <link rel="shortcut icon" href="/favicon-square.png" type="image/png" />

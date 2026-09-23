@@ -69,10 +69,14 @@
   --color-status-info-text: var(--status-info-text);
   --color-status-info-border: var(--status-info-border);
   --color-status-info-icon: var(--status-info-icon);
+
+  --font-weight-black: 800;
+  --font-weight-extrabold: 700;
+  --font-weight-bold: 600;
 }
 
 body {
-  font-family: var(--font-sans, system-ui, sans-serif);
+  font-family: var(--font-sans, 'Poppins', system-ui, sans-serif);
   background-color: var(--bg-default);
   color: var(--text-primary);
   min-height: 100vh;
