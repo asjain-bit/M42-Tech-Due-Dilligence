@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import { Globe } from 'lucide-react'
 
 export interface CountryFlagProps {
   country?: string
@@ -53,7 +54,7 @@ export const CountryFlag: React.FC<CountryFlagProps> = ({
     `inline-block rounded-xs object-cover border border-[#cbd5e1]/60 shadow-2xs shrink-0 align-middle ${sizeClasses} ${className}`.trim()
 
   if (imgError || countryCode === 'un') {
-    return <span className="inline-block text-xs select-none">🌐</span>
+    return <Globe className={`w-3.5 h-3.5 text-[#94a3b8] shrink-0 ${className}`.trim()} />
   }
 
   return (

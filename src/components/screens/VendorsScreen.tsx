@@ -7,6 +7,7 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   PhoneCall,
   CheckCircle2,
   X,
@@ -64,8 +65,9 @@ export const VendorsScreen: React.FC = () => {
   const [selectedSearchResult, setSelectedSearchResult] = useState<SearchVendorResult | null>(null)
 
   // Find vendor manual fields (NO auto-population)
-  const [findCountry, setFindCountry] = useState('United Arab Emirates')
+  const [findCountry, setFindCountry] = useState('')
   const [findWebsite, setFindWebsite] = useState('')
+  const [isFindCountryOpen, setIsFindCountryOpen] = useState(false)
 
   // Find vendor recipients tag-input state
   const [findRecipientInput, setFindRecipientInput] = useState('')
@@ -75,8 +77,9 @@ export const VendorsScreen: React.FC = () => {
   // Manual vendor tab inputs
   const [manualDisplayName, setManualDisplayName] = useState('')
   const [manualLegalName, setManualLegalName] = useState('')
-  const [manualCountry, setManualCountry] = useState('United Arab Emirates')
+  const [manualCountry, setManualCountry] = useState('')
   const [manualWebsite, setManualWebsite] = useState('')
+  const [isManualCountryOpen, setIsManualCountryOpen] = useState(false)
 
   // Manual vendor recipients tag-input state
   const [manualRecipientInput, setManualRecipientInput] = useState('')
@@ -85,6 +88,7 @@ export const VendorsScreen: React.FC = () => {
 
   // Edit Vendor modal state
   const [editingVendor, setEditingVendor] = useState<VendorRow | null>(null)
+  const [isEditCountryOpen, setIsEditCountryOpen] = useState(false)
   const [confirmStatusVendor, setConfirmStatusVendor] = useState<{
     vendor: VendorRow
     targetStatus: 'Activated' | 'Deactivated'
@@ -99,14 +103,14 @@ export const VendorsScreen: React.FC = () => {
   const [expandedRecipients, setExpandedRecipients] = useState<Record<string, boolean>>({})
 
   const worldCountryOptions = [
-    { name: 'United Arab Emirates', flag: '🇦🇪' },
-    { name: 'United States', flag: '🇺🇸' },
-    { name: 'United Kingdom', flag: '🇬🇧' },
+    { name: 'France', flag: '🇫🇷' },
     { name: 'Germany', flag: '🇩🇪' },
     { name: 'Netherlands', flag: '🇳🇱' },
-    { name: 'France', flag: '🇫🇷' },
-    { name: 'Singapore', flag: '🇸🇬' },
     { name: 'Saudi Arabia', flag: '🇸🇦' },
+    { name: 'Singapore', flag: '🇸🇬' },
+    { name: 'United Arab Emirates', flag: '🇦🇪' },
+    { name: 'United Kingdom', flag: '🇬🇧' },
+    { name: 'United States', flag: '🇺🇸' },
   ]
 
   // Mock search results list
@@ -416,7 +420,10 @@ export const VendorsScreen: React.FC = () => {
     setFindRecipientError(null)
     setManualDisplayName('')
     setManualLegalName('')
-    setManualCountry('United Arab Emirates')
+    setManualCountry('')
+    setFindCountry('')
+    setIsFindCountryOpen(false)
+    setIsManualCountryOpen(false)
     setManualWebsite('')
     setManualRecipients([])
     setManualRecipientInput('')
@@ -616,7 +623,8 @@ export const VendorsScreen: React.FC = () => {
               setFindRecipients([])
               setFindRecipientInput('')
               setFindRecipientError(null)
-              setFindCountry('United Arab Emirates')
+              setFindCountry('')
+              setManualCountry('')
               setShowAddVendorModal(true)
             }}
             className="bg-[#0d212c] hover:bg-[#122e3d] text-white font-bold py-2 px-5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-xs transition cursor-pointer border-0 shrink-0"
@@ -995,29 +1003,68 @@ export const VendorsScreen: React.FC = () => {
               </div>
 
               {/* Country */}
-              <div>
+              <div className="relative">
                 <label className="block text-xs font-bold text-[#0d212c] mb-1.5">Country</label>
-                <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-[#e2e8f0] bg-white focus-within:border-[#cbd5e1]">
-                  <CountryFlag country={editingVendor.country} />
-                  <select
-                    value={editingVendor.country}
-                    onChange={(e) => {
-                      const cObj = worldCountryOptions.find((c) => c.name === e.target.value)
-                      setEditingVendor({
-                        ...editingVendor,
-                        country: e.target.value,
-                        flag: cObj ? cObj.flag : '🌐',
-                      })
-                    }}
-                    className="w-full text-xs text-[#0d212c] bg-transparent outline-none cursor-pointer py-1"
-                  >
-                    {worldCountryOptions.map((c) => (
-                      <option key={c.name} value={c.name}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsEditCountryOpen((prev) => !prev)}
+                  className="w-full flex items-center justify-between gap-2 px-3.5 py-2 rounded-xl border border-[#e2e8f0] bg-white text-left outline-none hover:border-[#cbd5e1] focus:border-[#cbd5e1] cursor-pointer transition"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <CountryFlag country={editingVendor.country} />
+                    <span
+                      className={`text-xs truncate ${
+                        !editingVendor.country ? 'text-[#94a3b8]' : 'text-[#0d212c]'
+                      }`}
+                    >
+                      {editingVendor.country || 'Select country'}
+                    </span>
+                  </div>
+                  <ChevronDown
+                    className={`w-4 h-4 text-[#94a3b8] shrink-0 transition-transform duration-200 ${
+                      isEditCountryOpen ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+
+                {isEditCountryOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setIsEditCountryOpen(false)}
+                    />
+                    <div className="absolute top-full left-0 right-0 z-50 mt-1.5 flex flex-col gap-0.5 bg-white p-1.5 rounded-2xl border border-[#e2e8f0] shadow-2xl max-h-56 overflow-y-auto animate-in fade-in zoom-in-95 duration-150">
+                      {worldCountryOptions.map((c) => {
+                        const isSelected = editingVendor.country === c.name
+                        return (
+                          <div
+                            key={c.name}
+                            onClick={() => {
+                              const cObj = worldCountryOptions.find((opt) => opt.name === c.name)
+                              setEditingVendor({
+                                ...editingVendor,
+                                country: c.name,
+                                flag: cObj ? cObj.flag : '🌐',
+                              })
+                              setIsEditCountryOpen(false)
+                            }}
+                            className={`flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs cursor-pointer transition ${
+                              isSelected
+                                ? 'bg-[#f1f5f9] font-bold text-[#0d212c]'
+                                : 'hover:bg-[#f8fafc] text-[#0d212c]'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <CountryFlag country={c.name} />
+                              <span>{c.name}</span>
+                            </div>
+                            {isSelected && <Check className="w-3.5 h-3.5 text-[#36c0c9] shrink-0" />}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Website URL */}
@@ -1348,22 +1395,65 @@ export const VendorsScreen: React.FC = () => {
                   </div>
 
                   {/* Country */}
-                  <div>
+                  <div className="relative">
                     <label className="block text-xs font-bold text-[#0d212c] mb-1.5">Country</label>
-                    <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-[#e2e8f0] bg-white focus-within:border-[#cbd5e1]">
-                      <CountryFlag country={findCountry} />
-                      <select
-                        value={findCountry}
-                        onChange={(e) => setFindCountry(e.target.value)}
-                        className="w-full text-xs text-[#0d212c] bg-transparent outline-none cursor-pointer py-1"
-                      >
-                        {worldCountryOptions.map((c) => (
-                          <option key={c.name} value={c.name}>
-                            {c.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsFindCountryOpen((prev) => !prev)}
+                      className="w-full flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl border border-[#e2e8f0] bg-white text-left outline-none hover:border-[#cbd5e1] focus:border-[#cbd5e1] cursor-pointer transition"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <CountryFlag country={findCountry} />
+                        <span
+                          className={`text-xs truncate ${
+                            !findCountry ? 'text-[#94a3b8]' : 'text-[#0d212c]'
+                          }`}
+                        >
+                          {findCountry || 'Select country'}
+                        </span>
+                      </div>
+                      <ChevronDown
+                        className={`w-4 h-4 text-[#94a3b8] shrink-0 transition-transform duration-200 ${
+                          isFindCountryOpen ? 'rotate-180' : ''
+                        }`}
+                      />
+                    </button>
+
+                    {isFindCountryOpen && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={() => setIsFindCountryOpen(false)}
+                        />
+                        <div className="absolute top-full left-0 right-0 z-50 mt-1.5 flex flex-col gap-0.5 bg-white p-1.5 rounded-2xl border border-[#e2e8f0] shadow-2xl max-h-56 overflow-y-auto animate-in fade-in zoom-in-95 duration-150">
+                          {worldCountryOptions.map((c) => {
+                            const isSelected = findCountry === c.name
+                            return (
+                              <div
+                                key={c.name}
+                                onClick={() => {
+                                  setFindCountry(c.name)
+                                  setIsFindCountryOpen(false)
+                                }}
+                                className={`flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs cursor-pointer transition ${
+                                  isSelected
+                                    ? 'bg-[#f1f5f9] font-bold text-[#0d212c]'
+                                    : 'hover:bg-[#f8fafc] text-[#0d212c]'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <CountryFlag country={c.name} />
+                                  <span>{c.name}</span>
+                                </div>
+                                {isSelected && (
+                                  <Check className="w-3.5 h-3.5 text-[#36c0c9] shrink-0" />
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   {/* Website URL on next line (Auto-populated and Non-editable) */}
@@ -1524,24 +1614,67 @@ export const VendorsScreen: React.FC = () => {
 
                   {/* Country + Website on same row */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
+                    <div className="relative">
                       <label className="block text-xs font-bold text-[#0d212c] mb-1.5">
                         Country
                       </label>
-                      <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-[#e2e8f0] bg-white focus-within:border-[#cbd5e1]">
-                        <CountryFlag country={manualCountry} />
-                        <select
-                          value={manualCountry}
-                          onChange={(e) => setManualCountry(e.target.value)}
-                          className="w-full text-xs text-[#0d212c] bg-transparent outline-none cursor-pointer py-1"
-                        >
-                          {worldCountryOptions.map((c) => (
-                            <option key={c.name} value={c.name}>
-                              {c.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsManualCountryOpen((prev) => !prev)}
+                        className="w-full flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl border border-[#e2e8f0] bg-white text-left outline-none hover:border-[#cbd5e1] focus:border-[#cbd5e1] cursor-pointer transition"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <CountryFlag country={manualCountry} />
+                          <span
+                            className={`text-xs truncate ${
+                              !manualCountry ? 'text-[#94a3b8]' : 'text-[#0d212c]'
+                            }`}
+                          >
+                            {manualCountry || 'Select country'}
+                          </span>
+                        </div>
+                        <ChevronDown
+                          className={`w-4 h-4 text-[#94a3b8] shrink-0 transition-transform duration-200 ${
+                            isManualCountryOpen ? 'rotate-180' : ''
+                          }`}
+                        />
+                      </button>
+
+                      {isManualCountryOpen && (
+                        <>
+                          <div
+                            className="fixed inset-0 z-40"
+                            onClick={() => setIsManualCountryOpen(false)}
+                          />
+                          <div className="absolute top-full left-0 right-0 z-50 mt-1.5 flex flex-col gap-0.5 bg-white p-1.5 rounded-2xl border border-[#e2e8f0] shadow-2xl max-h-56 overflow-y-auto animate-in fade-in zoom-in-95 duration-150">
+                            {worldCountryOptions.map((c) => {
+                              const isSelected = manualCountry === c.name
+                              return (
+                                <div
+                                  key={c.name}
+                                  onClick={() => {
+                                    setManualCountry(c.name)
+                                    setIsManualCountryOpen(false)
+                                  }}
+                                  className={`flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs cursor-pointer transition ${
+                                    isSelected
+                                      ? 'bg-[#f1f5f9] font-bold text-[#0d212c]'
+                                      : 'hover:bg-[#f8fafc] text-[#0d212c]'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <CountryFlag country={c.name} />
+                                    <span>{c.name}</span>
+                                  </div>
+                                  {isSelected && (
+                                    <Check className="w-3.5 h-3.5 text-[#36c0c9] shrink-0" />
+                                  )}
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </>
+                      )}
                     </div>
 
                     <div>

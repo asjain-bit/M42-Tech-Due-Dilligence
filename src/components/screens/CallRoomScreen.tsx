@@ -212,6 +212,8 @@ export const CallRoomScreen: React.FC<CallRoomScreenProps> = ({
   const [vendorFlowStep, setVendorFlowStep] = useState<
     'select_role' | 'admin_join' | 'vendor_input' | 'vendor_otp'
   >(initialFlowStep)
+  const [adminConsent, setAdminConsent] = useState(false)
+  const [vendorConsent, setVendorConsent] = useState(false)
   const [vendorNameInput, setVendorNameInput] = useState('')
   const [vendorEmailInput, setVendorEmailInput] = useState('')
   const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', ''])
@@ -462,20 +464,44 @@ export const CallRoomScreen: React.FC<CallRoomScreenProps> = ({
                   value={yourName}
                   onChange={(e) => setYourName(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' && yourName.trim()) setRoomState('waiting')
+                    if (e.key === 'Enter' && yourName.trim() && adminConsent) setRoomState('waiting')
                   }}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] text-xs text-[#0d212c] outline-none focus:border-[#36c0c9] transition"
                 />
               </div>
 
-              <p className="text-[11px] text-[#64748b] leading-relaxed">
-                This call is recorded and transcribed for assessment purposes. By joining you
-                consent to recording.
-              </p>
+              {/* AI Disclosure */}
+              <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-2xl p-4 flex flex-col gap-1.5">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#0d212c]">
+                  AI DISCLOSURE
+                </span>
+                <p className="text-xs text-[#64748b] leading-relaxed">
+                  I am an AI agent — not a human. I am conducting this structured vendor due-diligence assessment on behalf of M42/Malaffi across the relevant domain teams. This call is recorded and transcribed for assessment purposes. By joining you consent to recording.
+                </p>
+              </div>
+
+              {/* Single Consent Checkbox */}
+              <div
+                onClick={() => setAdminConsent((prev) => !prev)}
+                className="flex items-start gap-2.5 cursor-pointer select-none group"
+              >
+                <div
+                  className={`mt-0.5 w-4 h-4 rounded-md flex items-center justify-center shrink-0 transition-all border ${
+                    adminConsent
+                      ? 'bg-[#36c0c9] border-[#36c0c9] shadow-2xs'
+                      : 'bg-white border-[#cbd5e1] group-hover:border-[#94a3b8]'
+                  }`}
+                >
+                  {adminConsent && <Check className="w-3 h-3 text-white stroke-[3]" />}
+                </div>
+                <span className="text-xs text-[#0d212c] font-normal leading-snug">
+                  I acknowledge I am speaking with an AI agent conducting this assessment on behalf of M42/Malaffi
+                </span>
+              </div>
 
               <button
                 id="callroom-join-btn"
-                disabled={!yourName.trim()}
+                disabled={!yourName.trim() || !adminConsent}
                 onClick={() => setRoomState('waiting')}
                 className="w-full bg-[#36c0c9] hover:bg-[#2badb6] disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-sm py-3 rounded-xl transition cursor-pointer border-0 shadow-md"
               >
@@ -562,9 +588,38 @@ export const CallRoomScreen: React.FC<CallRoomScreenProps> = ({
                     )}
                   </div>
 
+                  {/* AI Disclosure */}
+                  <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-2xl p-4 flex flex-col gap-1.5">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#0d212c]">
+                      AI DISCLOSURE
+                    </span>
+                    <p className="text-xs text-[#64748b] leading-relaxed">
+                      I am an AI agent — not a human. I am conducting this structured vendor due-diligence assessment on behalf of M42/Malaffi across the relevant domain teams. This call is recorded and transcribed for assessment purposes. By joining you consent to recording.
+                    </p>
+                  </div>
+
+                  {/* Single Consent Checkbox */}
+                  <div
+                    onClick={() => setVendorConsent((prev) => !prev)}
+                    className="flex items-start gap-2.5 cursor-pointer select-none group"
+                  >
+                    <div
+                      className={`mt-0.5 w-4 h-4 rounded-md flex items-center justify-center shrink-0 transition-all border ${
+                        vendorConsent
+                          ? 'bg-[#36c0c9] border-[#36c0c9] shadow-2xs'
+                          : 'bg-white border-[#cbd5e1] group-hover:border-[#94a3b8]'
+                      }`}
+                    >
+                      {vendorConsent && <Check className="w-3 h-3 text-white stroke-[3]" />}
+                    </div>
+                    <span className="text-xs text-[#0d212c] font-normal leading-snug">
+                      I acknowledge I am speaking with an AI agent conducting this assessment on behalf of M42/Malaffi
+                    </span>
+                  </div>
+
                   <button
                     id="vendor-send-otp-btn"
-                    disabled={!isFormValid}
+                    disabled={!isFormValid || !vendorConsent}
                     onClick={() => {
                       setOtpDigits(['', '', '', ''])
                       setOtpError('')
