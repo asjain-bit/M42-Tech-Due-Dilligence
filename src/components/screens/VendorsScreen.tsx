@@ -40,6 +40,7 @@ interface SearchVendorResult {
   id: string
   name: string
   domain: string
+  country?: string
   confidence: 'High confidence' | 'Medium confidence' | 'Low confidence'
   confidenceType: 'success' | 'warning' | 'error'
 }
@@ -119,6 +120,7 @@ export const VendorsScreen: React.FC = () => {
       id: 'sr-1',
       name: 'Presight AI Holding PLC',
       domain: 'presight.ai',
+      country: 'United Arab Emirates',
       confidence: 'High confidence',
       confidenceType: 'success',
     },
@@ -126,6 +128,7 @@ export const VendorsScreen: React.FC = () => {
       id: 'sr-2',
       name: 'Directus Open Source Ltd',
       domain: 'directus.io',
+      country: 'United States',
       confidence: 'High confidence',
       confidenceType: 'success',
     },
@@ -133,6 +136,7 @@ export const VendorsScreen: React.FC = () => {
       id: 'sr-3',
       name: 'Pango Cybersecurity Global',
       domain: 'pango.com',
+      country: 'United States',
       confidence: 'Medium confidence',
       confidenceType: 'warning',
     },
@@ -140,6 +144,7 @@ export const VendorsScreen: React.FC = () => {
       id: 'sr-4',
       name: 'Apex Healthcare Advisory',
       domain: 'apexhealth.co',
+      country: 'United Kingdom',
       confidence: 'Medium confidence',
       confidenceType: 'warning',
     },
@@ -147,6 +152,7 @@ export const VendorsScreen: React.FC = () => {
       id: 'sr-5',
       name: 'Delphi Intelligence Systems',
       domain: 'delphiai.de',
+      country: 'Germany',
       confidence: 'Low confidence',
       confidenceType: 'warning',
     },
@@ -355,6 +361,20 @@ export const VendorsScreen: React.FC = () => {
       setTimeout(() => {
         setIsSearchingVendor(false)
         setHasSearched(true)
+
+        // Auto-match vendor country
+        const query = findSearchQuery.trim().toLowerCase()
+        const matched = searchVendorResults.find(
+          (r) =>
+            r.name.toLowerCase().includes(query) ||
+            r.domain.toLowerCase().includes(query) ||
+            query.includes(r.name.toLowerCase())
+        )
+        if (matched && matched.country) {
+          setFindCountry(matched.country)
+        } else {
+          setFindCountry('United Arab Emirates')
+        }
       }, 700)
     }
   }
@@ -1293,7 +1313,11 @@ export const VendorsScreen: React.FC = () => {
                         value={findSearchQuery}
                         onChange={(e) => {
                           setFindSearchQuery(e.target.value)
-                          if (selectedSearchResult && e.target.value !== selectedSearchResult.name) {
+                          if (!e.target.value.trim()) {
+                            setSelectedSearchResult(null)
+                            setFindWebsite('')
+                            setFindCountry('')
+                          } else if (selectedSearchResult && e.target.value !== selectedSearchResult.name) {
                             setSelectedSearchResult(null)
                             setFindWebsite('')
                           }
@@ -1360,6 +1384,11 @@ export const VendorsScreen: React.FC = () => {
                                       ? res.domain
                                       : `https://${res.domain}`
                                   setFindWebsite(formattedUrl)
+                                }
+                                if (res.country) {
+                                  setFindCountry(res.country)
+                                } else {
+                                  setFindCountry('United Arab Emirates')
                                 }
                               }}
                               className={`p-3 rounded-xl border transition cursor-pointer flex items-center justify-between gap-3 ${
