@@ -1340,39 +1340,25 @@ export const VendorsScreen: React.FC = () => {
                               !findSearchQuery.trim() ||
                               r.name.toLowerCase().includes(findSearchQuery.toLowerCase()) ||
                               r.domain.toLowerCase().includes(findSearchQuery.toLowerCase())
-                          ).length || 1}{' '}
+                          ).length}{' '}
                           FOUND)
                         </span>
-                        {(searchVendorResults.filter(
+                        {searchVendorResults.filter(
                           (r) =>
                             !findSearchQuery.trim() ||
                             r.name.toLowerCase().includes(findSearchQuery.toLowerCase()) ||
                             r.domain.toLowerCase().includes(findSearchQuery.toLowerCase())
-                        ).length > 0
-                          ? searchVendorResults.filter(
-                              (r) =>
-                                !findSearchQuery.trim() ||
-                                r.name.toLowerCase().includes(findSearchQuery.toLowerCase()) ||
-                                r.domain.toLowerCase().includes(findSearchQuery.toLowerCase())
-                            )
-                          : [
-                              {
-                                id: `sr-dynamic-${findSearchQuery}`,
-                                name: findSearchQuery.trim(),
-                                domain: `${findSearchQuery
-                                  .trim()
-                                  .toLowerCase()
-                                  .replace(/[^a-z0-9]/g, '')}.com`,
-                                confidence: 'High confidence' as const,
-                                confidenceType: 'success' as const,
-                              },
-                              ...searchVendorResults.slice(0, 2),
-                            ]
-                        ).map((res) => {
-                          const isSelected =
-                            selectedSearchResult?.id === res.id || findSearchQuery === res.name
-                          return (
-                            <div
+                        ).length > 0 ? (
+                          searchVendorResults.filter(
+                            (r) =>
+                              !findSearchQuery.trim() ||
+                              r.name.toLowerCase().includes(findSearchQuery.toLowerCase()) ||
+                              r.domain.toLowerCase().includes(findSearchQuery.toLowerCase())
+                          ).map((res) => {
+                            const isSelected =
+                              selectedSearchResult?.id === res.id || findSearchQuery === res.name
+                            return (
+                              <div
                               key={res.id}
                               onClick={() => {
                                 setSelectedSearchResult(res)
@@ -1418,7 +1404,12 @@ export const VendorsScreen: React.FC = () => {
                               />
                             </div>
                           )
-                        })}
+                        })
+                        ) : (
+                          <div className="text-xs text-[#64748b] py-3 text-center">
+                            No vendor found in the public registry. You can add the vendor manually.
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
