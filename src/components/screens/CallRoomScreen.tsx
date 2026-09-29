@@ -1020,7 +1020,7 @@ export const CallRoomScreen: React.FC<CallRoomScreenProps> = ({
       </div>
 
       {/* ── MAIN BODY ────────────────────────────────────────────────────────────── */}
-      <div className="flex-1 flex min-h-0">
+      <div className="flex-1 flex min-h-0 relative">
         {/* ── STAGE ──────────────────────────────────────────────────────────────── */}
         <div className="flex-1 flex flex-col min-h-0 relative bg-[#f8fafc]">
           {/* Background blob */}
@@ -1083,23 +1083,79 @@ export const CallRoomScreen: React.FC<CallRoomScreenProps> = ({
           </div>
 
           {/* ── PARTICIPANT TILES — bottom-right, Teams style Light Theme ────────────────────── */}
-          <div className="absolute bottom-4 right-4 flex items-end gap-2.5 z-10">
-            {/* Vendor tile */}
-            <div className="w-32 h-22 rounded-2xl bg-white border border-[#e2e8f0] shadow-xl flex flex-col items-center justify-center gap-1 relative overflow-hidden p-2">
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex flex-row gap-2.5">
+            {/* Participant 1: Alex */}
+            <div className="w-32 h-[124px] rounded-2xl bg-white border border-[#e2e8f0] shadow-sm flex flex-col items-center justify-center gap-1 relative overflow-hidden p-2">
+              <div className="w-9 h-9 rounded-full bg-[#f1f5f9] border border-[#cbd5e1] flex items-center justify-center text-[#0d212c] font-bold text-sm shadow-2xs">
+                A
+              </div>
+              <span className="text-[10px] font-bold text-[#0d212c] truncate max-w-[110px] px-1 text-center">
+                Alex Smith
+              </span>
+              <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-[#f1f5f9] border border-[#e2e8f0] rounded-md px-1.5 py-0.5">
+                <Mic className="w-2.5 h-2.5 text-[#64748b]" strokeWidth={1} />
+                <span className="text-[8px] font-semibold text-[#64748b]">Vendor</span>
+              </div>
+            </div>
+
+            {/* Participant 2: Sarah */}
+            <div className="w-32 h-[124px] rounded-2xl bg-white border border-[#e2e8f0] shadow-sm flex flex-col items-center justify-center gap-1 relative overflow-hidden p-2">
+              <div className="w-9 h-9 rounded-full bg-[#f1f5f9] border border-[#cbd5e1] flex items-center justify-center text-[#0d212c] font-bold text-sm shadow-2xs">
+                S
+              </div>
+              <span className="text-[10px] font-bold text-[#0d212c] truncate max-w-[110px] px-1 text-center">
+                Sarah Jones
+              </span>
+              <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-[#f1f5f9] border border-[#e2e8f0] rounded-md px-1.5 py-0.5">
+                <Mic className="w-2.5 h-2.5 text-[#64748b]" strokeWidth={1} />
+                <span className="text-[8px] font-semibold text-[#64748b]">Vendor</span>
+              </div>
+            </div>
+
+            {/* Participant 3: Michael */}
+            <div className="w-32 h-[124px] rounded-2xl bg-white border border-[#e2e8f0] shadow-sm flex flex-col items-center justify-center gap-1 relative overflow-hidden p-2">
+              <div className="w-9 h-9 rounded-full bg-[#36c0c9] text-white flex items-center justify-center font-bold text-sm shadow-2xs">
+                M
+              </div>
+              <span className="text-[10px] font-bold text-[#0d212c] truncate max-w-[110px] px-1 text-center">
+                Michael Chen
+              </span>
+              <div className="absolute bottom-2 left-2 flex items-center gap-1 rounded-md px-1.5 py-0.5 border bg-[#f1f5f9] border-[#e2e8f0] text-[#64748b]">
+                <Mic className="w-2.5 h-2.5 text-[#64748b]" strokeWidth={1} />
+                <span className="text-[8px] font-semibold">M42</span>
+              </div>
+            </div>
+
+            {/* Participant 4: Emma */}
+            <div className="w-32 h-[124px] rounded-2xl bg-white border border-[#e2e8f0] shadow-sm flex flex-col items-center justify-center gap-1 relative overflow-hidden p-2">
+              <div className="w-9 h-9 rounded-full bg-[#36c0c9] text-white flex items-center justify-center font-bold text-sm shadow-2xs">
+                E
+              </div>
+              <span className="text-[10px] font-bold text-[#0d212c] truncate max-w-[110px] px-1 text-center">
+                Emma Wilson
+              </span>
+              <div className="absolute bottom-2 left-2 flex items-center gap-1 rounded-md px-1.5 py-0.5 border bg-[#f1f5f9] border-[#e2e8f0] text-[#64748b]">
+                <Mic className="w-2.5 h-2.5 text-[#64748b]" strokeWidth={1} />
+                <span className="text-[8px] font-semibold">M42</span>
+              </div>
+            </div>
+
+            {/* Participant 5: Vendor */}
+            <div className="w-32 h-[124px] rounded-2xl bg-white border border-[#e2e8f0] shadow-sm flex flex-col items-center justify-center gap-1 relative overflow-hidden p-2">
               <div className="w-9 h-9 rounded-full bg-[#f1f5f9] border border-[#cbd5e1] flex items-center justify-center text-[#0d212c] font-bold text-sm shadow-2xs">
                 {vendorShortName ? vendorShortName[0].toUpperCase() : 'V'}
               </div>
               <span className="text-[10px] font-bold text-[#0d212c] truncate max-w-[110px] px-1 text-center">
                 {vendorShortName}
               </span>
-              <div className="absolute bottom-1 left-1.5 flex items-center gap-1 bg-[#f1f5f9] border border-[#e2e8f0] rounded-md px-1.5 py-0.5">
-                <Mic className="w-2.5 h-2.5 text-[#64748b]" />
+              <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-[#f1f5f9] border border-[#e2e8f0] rounded-md px-1.5 py-0.5">
+                <Mic className="w-2.5 h-2.5 text-[#64748b]" strokeWidth={1} />
                 <span className="text-[8px] font-semibold text-[#64748b]">Vendor</span>
               </div>
             </div>
 
-            {/* Admin (current user = M42) tile */}
-            <div className="w-32 h-22 rounded-2xl bg-white border border-[#36c0c9]/40 shadow-xl flex flex-col items-center justify-center gap-1 relative overflow-hidden p-2">
+            {/* Participant 6: Admin */}
+            <div className="w-32 h-[124px] rounded-2xl bg-white border border-[#e2e8f0] shadow-sm flex flex-col items-center justify-center gap-1 relative overflow-hidden p-2">
               <div className="w-9 h-9 rounded-full bg-[#36c0c9] text-white flex items-center justify-center font-bold text-sm shadow-2xs">
                 {adminInitial}
               </div>
@@ -1109,16 +1165,16 @@ export const CallRoomScreen: React.FC<CallRoomScreenProps> = ({
               </span>
               {/* Mic badge */}
               <div
-                className={`absolute bottom-1 left-1.5 flex items-center gap-1 rounded-md px-1.5 py-0.5 border ${
+                className={`absolute bottom-2 left-2 flex items-center gap-1 rounded-md px-1.5 py-0.5 border ${
                   isMuted
                     ? 'bg-red-50 border-red-200 text-red-700'
                     : 'bg-[#f1f5f9] border-[#e2e8f0] text-[#64748b]'
                 }`}
               >
                 {isMuted ? (
-                  <MicOff className="w-2.5 h-2.5 text-red-600" />
+                  <MicOff className="w-2.5 h-2.5 text-red-600" strokeWidth={1} />
                 ) : (
-                  <Mic className="w-2.5 h-2.5 text-[#64748b]" />
+                  <Mic className="w-2.5 h-2.5 text-[#64748b]" strokeWidth={1} />
                 )}
                 <span className="text-[8px] font-semibold">M42</span>
               </div>
@@ -1126,9 +1182,13 @@ export const CallRoomScreen: React.FC<CallRoomScreenProps> = ({
           </div>
         </div>
 
-        {/* ── LIVE TRANSCRIPT PANEL — only shown when assessment started ─────────── */}
-        {assessmentStarted && showTranscript && (
-          <div className="w-[300px] border-l border-[#e2e8f0] bg-white flex flex-col shrink-0 min-h-0">
+        {/* ── LIVE TRANSCRIPT PANEL ─────────── */}
+        {assessmentStarted && (
+          <div
+            className={`absolute top-0 right-0 bottom-0 w-[300px] border-l border-[#e2e8f0] bg-white flex flex-col shrink-0 min-h-0 z-20 transition-transform duration-500 ease-in-out ${
+              showTranscript ? 'translate-x-0 pointer-events-auto animate-in slide-in-from-right' : 'translate-x-full pointer-events-none'
+            }`}
+          >
             <div className="flex items-center justify-between px-4 py-3 border-b border-[#e2e8f0] shrink-0">
               <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#0d212c]">
                 Live Transcript
