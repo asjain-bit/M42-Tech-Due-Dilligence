@@ -915,7 +915,7 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
                         <StatusChip label="Low confidence" status="warning" dot={false} />
                       </div>
                       <div className="text-base font-extrabold text-[#0d212c] mt-0.5">
-                        3/7 files uploaded
+                        7 files uploaded
                       </div>
                     </div>
 
