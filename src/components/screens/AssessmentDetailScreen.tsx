@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Send,
   Calendar,
@@ -50,6 +50,23 @@ interface AttachedFile {
   date: string
 }
 
+interface QuestionComment {
+  id: string
+  text: string
+  author: string
+  reviewer: string
+  date: string
+}
+
+const REVIEWER_NAMES = [
+  'Sarah Al Nuaimi',
+  'Dr. Tariq Al Mansoori',
+  'Marcus Vance',
+  'Fatima Al Hosani',
+  'Alex Rivera',
+  'Zaid Al Ali',
+]
+
 interface AuditTrailEvent {
   id: string
   title: string
@@ -76,6 +93,67 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
   >(assessment.status)
 
   const [toastMessage, setToastMessage] = useState<string | null>(null)
+  const [questionComments, setQuestionComments] = useState<Record<number, QuestionComment>>(() => {
+    const initialComments: Record<number, QuestionComment> = {}
+    if (assessment.status === 'finalised') {
+      initialComments[3] = {
+        id: `comment-3-${assessment.id}`,
+        text: 'Stage 2 certification audit confirmed and ISO/IEC 27001 certificate verified.',
+        author: 'Zaid Al Ali',
+        reviewer: 'Dr. Tariq Al Mansoori',
+        date: assessment.createdDate || '15 Aug 2026, 09:10 AM',
+      }
+      initialComments[6] = {
+        id: `comment-6-${assessment.id}`,
+        text: 'Recent SOC 2 Type II report and executive penetration test summary reviewed and verified.',
+        author: 'Zaid Al Ali',
+        reviewer: 'Sarah Al Nuaimi',
+        date: assessment.createdDate || '15 Aug 2026, 09:10 AM',
+      }
+      initialComments[7] = {
+        id: `comment-7-${assessment.id}`,
+        text: 'UAE cloud tenant data residency documentation validated with hosting provider.',
+        author: 'Zaid Al Ali',
+        reviewer: 'Marcus Vance',
+        date: assessment.createdDate || '15 Aug 2026, 09:10 AM',
+      }
+    }
+    return initialComments
+  })
+
+  useEffect(() => {
+    if (assessment.status === 'finalised') {
+      setQuestionComments((prev) => {
+        if (Object.keys(prev).length > 0) return prev
+        return {
+          3: {
+            id: `comment-3-${assessment.id}`,
+            text: 'Stage 2 certification audit confirmed and ISO/IEC 27001 certificate verified.',
+            author: 'Zaid Al Ali',
+            reviewer: 'Dr. Tariq Al Mansoori',
+            date: assessment.createdDate || '15 Aug 2026, 09:10 AM',
+          },
+          6: {
+            id: `comment-6-${assessment.id}`,
+            text: 'Recent SOC 2 Type II report and executive penetration test summary reviewed and verified.',
+            author: 'Zaid Al Ali',
+            reviewer: 'Sarah Al Nuaimi',
+            date: assessment.createdDate || '15 Aug 2026, 09:10 AM',
+          },
+          7: {
+            id: `comment-7-${assessment.id}`,
+            text: 'UAE cloud tenant data residency documentation validated with hosting provider.',
+            author: 'Zaid Al Ali',
+            reviewer: 'Marcus Vance',
+            date: assessment.createdDate || '15 Aug 2026, 09:10 AM',
+          },
+        }
+      })
+    }
+  }, [assessment.id, assessment.status, assessment.createdDate])
+
+  const [openCommentInput, setOpenCommentInput] = useState<Record<number, boolean>>({})
+  const [commentTexts, setCommentTexts] = useState<Record<number, string>>({})
   const [questionFiles, setQuestionFiles] = useState<Record<number, AttachedFile[]>>({
     3: [
       {
@@ -267,16 +345,45 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
     setTimeout(() => setToastMessage(null), 3000)
   }
 
-  const handleFinalize = () => {
-    const nextStatus = currentStatus === 'awaiting_evidence' ? 'ready' : 'finalised'
-    setCurrentStatus(nextStatus)
-    if (onStatusChange) {
-      onStatusChange(nextStatus)
+  const handleAddComment = (questionId: number) => {
+    const text = (commentTexts[questionId] || '').trim()
+    if (!text) return
+
+    // Only 1 comment can be added for low confidence
+    if (questionComments[questionId]) return
+
+    const randomName = REVIEWER_NAMES[Math.floor(Math.random() * REVIEWER_NAMES.length)]
+    const now = new Date()
+    const formattedDate = now.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    })
+    const formattedTime = now.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    })
+    const formattedTimestamp = `${formattedDate}, ${formattedTime}`
+
+    const newComment: QuestionComment = {
+      id: `comment-${questionId}-${Date.now()}`,
+      text,
+      author: 'Zaid Al Ali',
+      reviewer: randomName,
+      date: formattedTimestamp,
     }
-    setToastMessage(
-      `Assessment finalized! Status updated to ${nextStatus === 'ready' ? 'Ready' : 'Finalised'}.`
-    )
-    setTimeout(() => setToastMessage(null), 3500)
+
+    setQuestionComments((prev) => ({
+      ...prev,
+      [questionId]: newComment,
+    }))
+
+    setCommentTexts((prev) => ({ ...prev, [questionId]: '' }))
+    setOpenCommentInput((prev) => ({ ...prev, [questionId]: false }))
+
+    setToastMessage(`Comment added and reviewed by ${randomName}`)
+    setTimeout(() => setToastMessage(null), 3000)
   }
 
   const questions = [
@@ -349,7 +456,7 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
       whyScore: 'Scored on the quality of the answer.',
       answerNotes:
         'The answer addresses role-based least-privilege access and access controls but fails to explicitly mention SSO or enforced MFA.',
-      requiresEvidence: true,
+      requiresEvidence: false,
     },
     {
       id: 5,
@@ -364,7 +471,7 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
       whyScore: 'Scored on the quality of the answer.',
       answerNotes:
         'The answer confirms the existence of a documented incident-response process but fails to provide a stated notification window.',
-      requiresEvidence: true,
+      requiresEvidence: false,
     },
     {
       id: 6,
@@ -394,6 +501,25 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
       requiresEvidence: true,
     },
   ]
+
+  const lowConfidenceQuestions = questions.filter(
+    (q) => q.confidence === 'Low confidence'
+  )
+  const allLowConfidenceCommentsAdded =
+    lowConfidenceQuestions.length === 0 ||
+    lowConfidenceQuestions.every(
+      (q) => Boolean(questionComments[q.id]?.text?.trim())
+    )
+
+  const handleFinalize = () => {
+    if (!allLowConfidenceCommentsAdded) return
+    setCurrentStatus('finalised')
+    if (onStatusChange) {
+      onStatusChange('finalised')
+    }
+    setToastMessage('Assessment finalized! Status updated to Finalised.')
+    setTimeout(() => setToastMessage(null), 3500)
+  }
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-[#0d212c] pb-16 font-sans w-full">
@@ -525,24 +651,30 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
             {currentStatus !== 'scheduled' && (
               <button
                 onClick={() => alert(`Downloading PDF report for ${assessment.vendor}...`)}
-                className={
-                  currentStatus === 'finalised'
-                    ? 'bg-[#0d212c] hover:bg-[#122e3d] text-white font-bold text-xs px-5 py-2 rounded-xl transition cursor-pointer shadow-2xs border-0 flex items-center gap-2'
-                    : 'px-4 py-2 rounded-xl border border-[#cbd5e1] hover:border-[#94a3b8] hover:bg-slate-50 text-[#0d212c] bg-white font-bold text-xs flex items-center gap-2 shadow-2xs cursor-pointer transition'
-                }
+                className="px-4 py-2 rounded-xl border border-[#cbd5e1] hover:border-[#94a3b8] hover:bg-slate-50 text-[#0d212c] bg-white font-bold text-xs flex items-center gap-2 shadow-2xs cursor-pointer transition"
               >
-                <Download
-                  className={`w-4 h-4 ${currentStatus === 'finalised' ? 'text-white' : 'text-[#0d212c]'}`}
-                />
+                <Download className="w-4 h-4 text-[#0d212c]" />
                 <span>Download PDF</span>
               </button>
             )}
-            {currentStatus !== 'scheduled' && currentStatus !== 'finalised' && (
+            {currentStatus !== 'scheduled' && (
               <button
                 onClick={handleFinalize}
-                className="bg-[#0d212c] hover:bg-[#122e3d] text-white font-bold text-xs px-5 py-2 rounded-xl transition cursor-pointer shadow-2xs border-0"
+                disabled={currentStatus === 'finalised' || !allLowConfidenceCommentsAdded}
+                title={
+                  currentStatus === 'finalised'
+                    ? 'Assessment is finalised'
+                    : !allLowConfidenceCommentsAdded
+                    ? 'Please add comments to all low confidence questions before finalizing'
+                    : undefined
+                }
+                className={`text-white font-bold text-xs px-5 py-2 rounded-xl transition border-0 shadow-2xs ${
+                  currentStatus === 'finalised' || !allLowConfidenceCommentsAdded
+                    ? 'bg-[#0d212c] opacity-40 cursor-not-allowed'
+                    : 'bg-[#0d212c] hover:bg-[#122e3d] cursor-pointer'
+                }`}
               >
-                Finalize
+                {currentStatus === 'finalised' ? 'Finalised' : 'Finalize'}
               </button>
             )}
           </div>
@@ -905,11 +1037,15 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
               <div className="bg-white p-6 rounded-2xl border border-[#e2e8f0] shadow-xs">
                 <div className="divide-y divide-[#e2e8f0]/80">
                   {questions.map((q) => {
+                    const isLowConfidence = !isScheduled && q.confidence === 'Low confidence'
                     const attachmentsForQuestion = questionFiles[q.id] || []
                     const canUpload =
-                      !isScheduled && currentStatus !== 'completed' && q.requiresEvidence
+                      !isScheduled &&
+                      currentStatus !== 'completed' &&
+                      currentStatus !== 'finalised' &&
+                      isLowConfidence
                     const shouldShowAttachmentSection =
-                      !isScheduled && (attachmentsForQuestion.length > 0 || canUpload)
+                      !isScheduled && (attachmentsForQuestion.length > 0 || isLowConfidence)
 
                     return (
                       <div key={q.id} className="py-5 first:pt-0 last:pb-0 flex flex-col gap-3">
@@ -982,7 +1118,7 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
 
                         {shouldShowAttachmentSection && (
                           <div className="mt-3 p-4 sm:p-5 rounded-2xl bg-[#f8fafc] border border-[#e2e8f0] flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                            {/* Column 1: Attachments (if available) */}
+                            {/* Attachments (if available) */}
                             {attachmentsForQuestion.length > 0 && (
                               <div className="flex flex-col gap-2.5 min-w-0 flex-1">
                                 <div className="flex items-center gap-1.5 text-xs font-bold text-[#0d212c]">
@@ -1031,7 +1167,20 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
                               </div>
                             )}
 
-                            {/* Column 2: Evidence Section (Shown ONLY if evidence is NOT uploaded yet) */}
+                            {/* Upload Evidence button when attachments already exist */}
+                            {attachmentsForQuestion.length > 0 && canUpload && (
+                              <label className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white border border-[#0d7280] text-[#0d7280] hover:bg-[#f0fdfa] font-bold text-xs cursor-pointer transition shadow-2xs shrink-0 self-start lg:self-center">
+                                <Upload className="w-3.5 h-3.5 text-[#0d7280]" />
+                                <span>Upload evidence</span>
+                                <input
+                                  type="file"
+                                  className="hidden"
+                                  onChange={(e) => handleFileUpload(q.id, e)}
+                                />
+                              </label>
+                            )}
+
+                            {/* Evidence Section (Shown when no evidence is uploaded yet) */}
                             {attachmentsForQuestion.length === 0 && (
                               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 flex-1">
                                 <div className="flex flex-col gap-0.5">
@@ -1060,6 +1209,104 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
                                 )}
                               </div>
                             )}
+                          </div>
+                        )}
+
+                        {/* Reviewer Comment Section (ONLY for Low confidence questions) */}
+                        {isLowConfidence && (
+                          <div className="mt-1 flex flex-col gap-2">
+                            {/* If comment has already been added */}
+                            {questionComments[q.id] ? (
+                              <div className="p-3.5 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] flex flex-col gap-2">
+                                {/* Top: Name of the person who added the comment */}
+                                <div className="flex items-center justify-between gap-2 flex-wrap">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-6 h-6 rounded-full bg-[#0d7280]/10 text-[#0d7280] flex items-center justify-center text-[10px] font-bold shrink-0">
+                                      {questionComments[q.id].author.charAt(0)}
+                                    </div>
+                                    <span className="text-xs font-bold text-[#0d212c]">
+                                      {questionComments[q.id].author}
+                                    </span>
+                                  </div>
+                                  <span className="text-[11px] text-[#94a3b8]">
+                                    {questionComments[q.id].date}
+                                  </span>
+                                </div>
+
+                                {/* Middle: Comment text */}
+                                <p className="text-xs text-[#0d212c] pl-8 whitespace-pre-wrap leading-relaxed">
+                                  {questionComments[q.id].text}
+                                </p>
+
+                                {/* Bottom: Reviewed by user name */}
+                                <div className="pt-2 pl-8 border-t border-[#e2e8f0]/60 flex items-center gap-1.5 text-xs text-[#64748b]">
+                                  <span>Reviewed by:</span>
+                                  <span className="font-semibold text-[#0d212c]">
+                                    {questionComments[q.id].reviewer}
+                                  </span>
+                                </div>
+                              </div>
+                            ) : currentStatus !== 'finalised' ? (
+                              /* If no comment added yet, give the option to add only 1 comment */
+                              <div>
+                                {!openCommentInput[q.id] ? (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setOpenCommentInput((prev) => ({ ...prev, [q.id]: true }))
+                                    }
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#cbd5e1] bg-white text-xs font-semibold text-[#0d212c] shadow-2xs cursor-pointer"
+                                  >
+                                    <MessageSquare className="w-3.5 h-3.5" />
+                                    <span>Add comment</span>
+                                  </button>
+                                ) : (
+                                  <div className="p-3.5 rounded-xl bg-white border border-[#cbd5e1] shadow-2xs flex flex-col gap-2.5">
+                                    <div className="flex items-center justify-between">
+                                      <label className="text-xs font-bold text-[#0d212c] flex items-center gap-1.5">
+                                        <MessageSquare className="w-3.5 h-3.5 text-[#0d7280]" />
+                                        <span>Add Comment</span>
+                                      </label>
+                                      <span className="text-[11px] text-[#64748b]">
+                                        1 comment allowed for low confidence
+                                      </span>
+                                    </div>
+                                    <textarea
+                                      value={commentTexts[q.id] || ''}
+                                      onChange={(e) =>
+                                        setCommentTexts((prev) => ({
+                                          ...prev,
+                                          [q.id]: e.target.value,
+                                        }))
+                                      }
+                                      placeholder="Write your review comment here..."
+                                      rows={2}
+                                      className="w-full p-2.5 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] text-xs text-[#0d212c] outline-none resize-none"
+                                    />
+                                    <div className="flex items-center justify-end gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setOpenCommentInput((prev) => ({ ...prev, [q.id]: false }))
+                                          setCommentTexts((prev) => ({ ...prev, [q.id]: '' }))
+                                        }}
+                                        className="px-3 py-1.5 rounded-xl text-xs font-medium text-[#64748b] hover:text-[#0d212c] cursor-pointer"
+                                      >
+                                        Cancel
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleAddComment(q.id)}
+                                        disabled={!(commentTexts[q.id] || '').trim()}
+                                        className="px-3.5 py-1.5 rounded-xl bg-[#0d212c] disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold cursor-pointer border-0 shadow-2xs"
+                                      >
+                                        Add comment
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ) : null}
                           </div>
                         )}
                       </div>
