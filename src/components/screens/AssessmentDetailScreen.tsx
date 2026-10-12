@@ -347,7 +347,7 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
 
   const handleAddComment = (questionId: number) => {
     const text = (commentTexts[questionId] || '').trim()
-    if (!text) return
+    if (!text || text.length > 500) return
 
     // Only 1 comment can be added for low confidence
     if (questionComments[questionId]) return
@@ -502,14 +502,10 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
     },
   ]
 
-  const lowConfidenceQuestions = questions.filter(
-    (q) => q.confidence === 'Low confidence'
-  )
+  const lowConfidenceQuestions = questions.filter((q) => q.confidence === 'Low confidence')
   const allLowConfidenceCommentsAdded =
     lowConfidenceQuestions.length === 0 ||
-    lowConfidenceQuestions.every(
-      (q) => Boolean(questionComments[q.id]?.text?.trim())
-    )
+    lowConfidenceQuestions.every((q) => Boolean(questionComments[q.id]?.text?.trim()))
 
   const handleFinalize = () => {
     if (!allLowConfidenceCommentsAdded) return
@@ -665,8 +661,8 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
                   currentStatus === 'finalised'
                     ? 'Assessment is finalised'
                     : !allLowConfidenceCommentsAdded
-                    ? 'Please add comments to all low confidence questions before finalizing'
-                    : undefined
+                      ? 'Please add comments to all low confidence questions before finalizing'
+                      : undefined
                 }
                 className={`text-white font-bold text-xs px-5 py-2 rounded-xl transition border-0 shadow-2xs ${
                   currentStatus === 'finalised' || !allLowConfidenceCommentsAdded
@@ -1046,6 +1042,9 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
                       isLowConfidence
                     const shouldShowAttachmentSection =
                       !isScheduled && (attachmentsForQuestion.length > 0 || isLowConfidence)
+                    const commentText = commentTexts[q.id] || ''
+                    const commentLength = commentText.length
+                    const isCommentLimitReached = commentLength >= 500
 
                     return (
                       <div key={q.id} className="py-5 first:pt-0 last:pb-0 flex flex-col gap-3">
@@ -1271,23 +1270,52 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
                                         1 comment allowed for low confidence
                                       </span>
                                     </div>
-                                    <textarea
-                                      value={commentTexts[q.id] || ''}
-                                      onChange={(e) =>
-                                        setCommentTexts((prev) => ({
-                                          ...prev,
-                                          [q.id]: e.target.value,
-                                        }))
-                                      }
-                                      placeholder="Write your review comment here..."
-                                      rows={2}
-                                      className="w-full p-2.5 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] text-xs text-[#0d212c] outline-none resize-none"
-                                    />
+                                    <div className="relative">
+                                      <textarea
+                                        value={commentText}
+                                        onChange={(e) =>
+                                          setCommentTexts((prev) => ({
+                                            ...prev,
+                                            [q.id]: e.target.value.slice(0, 500),
+                                          }))
+                                        }
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter' && isCommentLimitReached) {
+                                            e.preventDefault()
+                                          }
+                                        }}
+                                        maxLength={500}
+                                        placeholder="Write your review comment here..."
+                                        rows={2}
+                                        className={`w-full p-2.5 pb-6 rounded-xl border text-xs text-[#0d212c] outline-none resize-none transition ${
+                                          isCommentLimitReached
+                                            ? 'border-red-400 bg-red-50/20 focus:border-red-500'
+                                            : 'border-[#e2e8f0] bg-[#f8fafc] focus:border-[#cbd5e1]'
+                                        }`}
+                                      />
+                                      <span
+                                        className={`absolute bottom-2 right-2.5 text-[11px] pointer-events-none select-none ${
+                                          isCommentLimitReached
+                                            ? 'text-red-500 font-semibold'
+                                            : 'text-[#64748b]'
+                                        }`}
+                                      >
+                                        {commentLength}/500 character
+                                      </span>
+                                    </div>
+                                    {isCommentLimitReached && (
+                                      <p className="text-[11px] text-red-500 font-medium animate-in fade-in duration-150">
+                                        Maximum limit of 500 characters reached
+                                      </p>
+                                    )}
                                     <div className="flex items-center justify-end gap-2">
                                       <button
                                         type="button"
                                         onClick={() => {
-                                          setOpenCommentInput((prev) => ({ ...prev, [q.id]: false }))
+                                          setOpenCommentInput((prev) => ({
+                                            ...prev,
+                                            [q.id]: false,
+                                          }))
                                           setCommentTexts((prev) => ({ ...prev, [q.id]: '' }))
                                         }}
                                         className="px-3 py-1.5 rounded-xl text-xs font-medium text-[#64748b] hover:text-[#0d212c] cursor-pointer"
@@ -1297,7 +1325,7 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
                                       <button
                                         type="button"
                                         onClick={() => handleAddComment(q.id)}
-                                        disabled={!(commentTexts[q.id] || '').trim()}
+                                        disabled={!commentText.trim() || commentLength > 500}
                                         className="px-3.5 py-1.5 rounded-xl bg-[#0d212c] disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold cursor-pointer border-0 shadow-2xs"
                                       >
                                         Add comment
