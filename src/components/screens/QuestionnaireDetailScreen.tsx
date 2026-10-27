@@ -208,7 +208,7 @@ export const QuestionnaireDetailScreen: React.FC<QuestionnaireDetailScreenProps>
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-[#0d212c] pb-16 font-sans w-full">
+    <div className="bg-[#f8fafc] text-[#0d212c] p-4 font-sans w-full">
       {/* Toast Notification — subtle light semantic styling */}
       {toastMessage && (
         <div className="fixed top-4 right-4 z-50 bg-[#f0fdf4] text-[#15803d] px-4 py-3 rounded-xl shadow-md border border-[#bbf7d0] flex items-center gap-3 animate-in slide-in-from-top duration-300">
@@ -218,7 +218,7 @@ export const QuestionnaireDetailScreen: React.FC<QuestionnaireDetailScreenProps>
       )}
 
       {/* Breadcrumb Header */}
-      <div className="w-full px-6 lg:px-10 pt-4 pb-2 text-xs font-semibold flex items-center gap-1.5 text-[#64748b]">
+      <div className="w-full pb-2 text-xs font-semibold flex items-center gap-1.5 text-[#64748b]">
         <button
           onClick={onBack}
           className="hover:text-[#36c0c9] cursor-pointer flex items-center gap-1"
@@ -231,7 +231,7 @@ export const QuestionnaireDetailScreen: React.FC<QuestionnaireDetailScreenProps>
       </div>
 
       {/* Header Bar */}
-      <div className="w-full px-6 lg:px-10 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="w-full py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex flex-col gap-1">
           <span className="text-[11px] font-bold tracking-wider text-[#64748b] uppercase">
             QUESTIONNAIRE
@@ -317,7 +317,7 @@ export const QuestionnaireDetailScreen: React.FC<QuestionnaireDetailScreenProps>
       </div>
 
       {/* Questions List */}
-      <div className="w-full px-6 lg:px-10 mt-6 flex flex-col gap-5">
+      <div className="w-full mt-6 flex flex-col gap-5">
         {questions.length === 0 ? (
           <div className="bg-white rounded-2xl border border-[#e2e8f0] p-12 text-center shadow-xs flex flex-col items-center justify-center gap-3">
             <h3 className="text-[#0d212c] font-extrabold text-lg">No questions available</h3>
@@ -448,7 +448,7 @@ export const QuestionnaireDetailScreen: React.FC<QuestionnaireDetailScreenProps>
       {/* Requirement 4: Add New Question Modal Popup */}
       {showAddQuestionModal && (
         <div className="fixed inset-0 z-50 bg-[#0d212c]/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-[#e2e8f0] animate-in fade-in zoom-in-95 duration-150">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-[#e2e8f0] animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between border-b border-[#e2e8f0] pb-3 mb-4">
               <h3 className="text-base font-extrabold text-[#0d212c]">Add new question</h3>
               <button

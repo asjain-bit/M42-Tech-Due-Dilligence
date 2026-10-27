@@ -23,6 +23,7 @@ import { CallRoomScreen } from './CallRoomScreen'
 
 export interface VendorDispatchData {
   id: string
+  caseId: string
   name: string
   sublabel: string
   domain: string
@@ -31,9 +32,6 @@ export interface VendorDispatchData {
   email: string
   recipients?: string[]
 }
-
-// Dashboard assessments use PR-115 to PR-126, so new dispatches continue from PR-127
-let nextCaseNumber = 127
 
 interface ConfigureVendorCallScreenProps {
   vendor: VendorDispatchData
@@ -46,7 +44,8 @@ export const ConfigureVendorCallScreen: React.FC<ConfigureVendorCallScreenProps>
   onBack,
   onComplete: _onComplete,
 }) => {
-  const [caseId] = useState(() => `PR-${nextCaseNumber++}`)
+  // Calls are dispatched against the vendor's case ID
+  const caseId = vendor.caseId
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1)
   const [hasCompletedStep2, setHasCompletedStep2] = useState(false)
   const [isDispatched, setIsDispatched] = useState(false)
@@ -358,8 +357,8 @@ export const ConfigureVendorCallScreen: React.FC<ConfigureVendorCallScreenProps>
   // SCREEN 2: Assessment Dispatched View
   if (isDispatched) {
     return (
-      <div className="min-h-screen bg-[#f8fafc] text-[#0d212c] pb-16 font-sans w-full flex flex-col items-center">
-        <div className="w-full px-6 lg:px-10 pt-4 pb-2 text-xs font-semibold flex items-center gap-1.5 text-[#64748b]">
+      <div className="bg-[#f8fafc] text-[#0d212c] p-4 font-sans w-full flex flex-col items-center">
+        <div className="w-full pb-2 text-xs font-semibold flex items-center gap-1.5 text-[#64748b]">
           <button
             onClick={onBack}
             className="hover:text-[#36c0c9] cursor-pointer flex items-center gap-1"
@@ -538,9 +537,9 @@ export const ConfigureVendorCallScreen: React.FC<ConfigureVendorCallScreenProps>
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-[#0d212c] pb-16 font-sans w-full">
+    <div className="bg-[#f8fafc] text-[#0d212c] p-4 font-sans w-full">
       {/* Breadcrumb Header */}
-      <div className="w-full px-6 lg:px-10 pt-4 pb-2 text-xs font-semibold flex items-center gap-1.5 text-[#64748b]">
+      <div className="w-full pb-2 text-xs font-semibold flex items-center gap-1.5 text-[#64748b]">
         <button
           onClick={onBack}
           className="hover:text-[#36c0c9] cursor-pointer flex items-center gap-1"
@@ -557,9 +556,9 @@ export const ConfigureVendorCallScreen: React.FC<ConfigureVendorCallScreenProps>
       </div>
 
       {/* Main Page Title Header */}
-      <div className="w-full px-6 lg:px-10 py-3 flex flex-col gap-1">
+      <div className="w-full py-3 flex flex-col gap-1">
         <h1 className="text-xl lg:text-2xl font-extrabold tracking-tight text-[#0d212c]">
-          Configure vendor call
+          Assessment call - {caseId}
         </h1>
         <p className="text-xs text-[#64748b]">
           Set up the session, configure Agent, then review before launch.
@@ -567,7 +566,7 @@ export const ConfigureVendorCallScreen: React.FC<ConfigureVendorCallScreenProps>
       </div>
 
       {/* TOP FULL WIDTH HORIZONTAL STEP INDICATORS BAR */}
-      <div className="w-full px-6 lg:px-10 mt-4">
+      <div className="w-full mt-4">
         <div className="bg-white p-5 rounded-2xl border border-[#e2e8f0] shadow-xs flex flex-col gap-3">
           <span className="text-[10px] font-extrabold text-[#64748b] uppercase tracking-wider">
             CALL SETUP STAGES
@@ -663,7 +662,7 @@ export const ConfigureVendorCallScreen: React.FC<ConfigureVendorCallScreenProps>
 
       {/* Main Content Layout Grid */}
       <div
-        className={`w-full px-6 lg:px-10 mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6 ${
+        className={`w-full mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6 ${
           currentStep === 3 ? 'items-stretch' : 'items-start'
         }`}
       >

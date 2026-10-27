@@ -27,8 +27,26 @@ import {
   XCircle,
   AlertTriangle,
   X,
+  Pencil,
 } from 'lucide-react'
 import { StatusChip } from '@/components/atoms/StatusChip'
+
+export type AssessmentStatus =
+  | 'awaiting_evidence'
+  | 'completed'
+  | 'scheduled'
+  | 'cancelled'
+  | 'finalised'
+  | 'ready'
+
+export interface MeetingLogEntry {
+  id: string
+  type: 'rescheduled' | 'cancelled'
+  timestamp: string
+  actor: string
+  details: string
+  reason: string
+}
 
 export interface AssessmentDetailData {
   id: string
@@ -36,15 +54,32 @@ export interface AssessmentDetailData {
   vendor: string
   questionnaire: string
   round: string
-  status: 'awaiting_evidence' | 'completed' | 'scheduled' | 'finalised' | 'ready'
+  status: AssessmentStatus
   score: string
   createdDate: string
+  meetingDateTime?: string
+  meetingLog?: MeetingLogEntry[]
 }
 
 interface AssessmentDetailScreenProps {
   assessment: AssessmentDetailData
   onBack: () => void
-  onStatusChange?: (newStatus: 'ready' | 'finalised' | 'completed') => void
+  onStatusChange?: (newStatus: 'ready' | 'finalised' | 'completed' | 'cancelled') => void
+  onMeetingChange?: (update: { meetingDateTime: string; meetingLog: MeetingLogEntry[] }) => void
+}
+
+type ConfidenceLevel = 'High confidence' | 'Medium confidence' | 'Low confidence'
+
+const CONFIDENCE_LEVELS: ConfidenceLevel[] = ['High confidence', 'Medium confidence', 'Low confidence']
+
+interface ConfidenceChange {
+  id: string
+  questionId: number
+  from: ConfidenceLevel
+  to: ConfidenceLevel
+  reason: string
+  changedBy: string
+  date: string
 }
 
 interface AttachedFile {
@@ -61,6 +96,12 @@ interface QuestionComment {
   reviewer: string
   date: string
 }
+
+const CURRENT_USER = 'Zaid Al Ali'
+
+// Formats a date as "27 Oct 2026, 06:29 PM"
+const formatTimestamp = (date: Date) =>
+  `${date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}, ${date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}`
 
 const DEFAULT_MEETING_RECIPIENTS = ['zaid.alali@m42.ae', 'audit@facility.ae', 'sam.ai@m42.ae']
 const MAX_MEETING_RECIPIENTS = 5
@@ -97,15 +138,14 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
   assessment,
   onBack,
   onStatusChange,
+  onMeetingChange,
 }) => {
   const [activeTab, setActiveTab] = useState<'assessment' | 'audit_trail'>('assessment')
   const [showAnswerKey, setShowAnswerKey] = useState(false)
   const [isPlayingAudio, setIsPlayingAudio] = useState(false)
   const [playbackSpeed, setPlaybackSpeed] = useState('1')
   const [copiedUrl, setCopiedUrl] = useState(false)
-  const [currentStatus, setCurrentStatus] = useState<
-    'awaiting_evidence' | 'completed' | 'scheduled' | 'finalised' | 'ready'
-  >(assessment.status)
+  const [currentStatus, setCurrentStatus] = useState<AssessmentStatus>(assessment.status)
 
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [questionComments, setQuestionComments] = useState<Record<number, QuestionComment>>(() => {
@@ -168,6 +208,12 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
   }, [assessment.id, assessment.status, assessment.createdDate])
 
   const [openCommentInput, setOpenCommentInput] = useState<Record<number, boolean>>({})
+
+  // Reviewer confidence changes (newest first); the reason is fed back to train the agent
+  const [confidenceChanges, setConfidenceChanges] = useState<ConfidenceChange[]>([])
+  const [confidenceEditQuestionId, setConfidenceEditQuestionId] = useState<number | null>(null)
+  const [newConfidence, setNewConfidence] = useState<ConfidenceLevel | null>(null)
+  const [confidenceReason, setConfidenceReason] = useState('')
   const [commentTexts, setCommentTexts] = useState<Record<number, string>>({})
   const [questionFiles, setQuestionFiles] = useState<Record<number, AttachedFile[]>>({
     3: [
@@ -183,12 +229,16 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
   // Sample Meeting URL for Dispatch Call
   const meetingUrl = 'https://meet.m42.ae/call/vendor-audit-9823'
 
-  const isScheduled = currentStatus === 'scheduled'
+  // Scheduled and cancelled assessments never reached the assessment call
+  const isCancelled = currentStatus === 'cancelled'
+  const isScheduled = currentStatus === 'scheduled' || isCancelled
 
   // Scheduled meeting management (cancel / reschedule)
-  const [meetingDateTime, setMeetingDateTime] = useState(assessment.createdDate)
-  const [meetingCancelled, setMeetingCancelled] = useState(false)
-  const [cancelReasonSaved, setCancelReasonSaved] = useState('')
+  const [meetingDateTime, setMeetingDateTime] = useState(
+    assessment.meetingDateTime ?? assessment.createdDate
+  )
+  const [meetingLog, setMeetingLog] = useState<MeetingLogEntry[]>(assessment.meetingLog ?? [])
+  const cancelEntry = meetingLog.find((entry) => entry.type === 'cancelled')
   const [showCancelModal, setShowCancelModal] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
   const [showRescheduleModal, setShowRescheduleModal] = useState(false)
@@ -212,9 +262,26 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
     setTimeout(() => setToastMessage(null), 3000)
   }
 
+  const updateMeeting = (dateTime: string, entry: MeetingLogEntry) => {
+    const updatedLog = [entry, ...meetingLog]
+    setMeetingDateTime(dateTime)
+    setMeetingLog(updatedLog)
+    onMeetingChange?.({ meetingDateTime: dateTime, meetingLog: updatedLog })
+  }
+
   const handleConfirmCancel = () => {
-    setMeetingCancelled(true)
-    setCancelReasonSaved(cancelReason.trim())
+    const reason = cancelReason.trim()
+    if (!reason) return
+    updateMeeting(meetingDateTime, {
+      id: `meeting-cancelled-${Date.now()}`,
+      type: 'cancelled',
+      timestamp: formatTimestamp(new Date()),
+      actor: CURRENT_USER,
+      details: `Cancelled the assessment meeting scheduled for ${meetingDateTime}.`,
+      reason,
+    })
+    setCurrentStatus('cancelled')
+    onStatusChange?.('cancelled')
     setShowCancelModal(false)
     setCancelReason('')
     showTimedToast('Meeting cancelled successfully')
@@ -259,7 +326,14 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
       year: 'numeric',
     })
     const newDateTime = `${formattedDate}, ${formatTimeInput(rescheduleStart)} - ${formatTimeInput(rescheduleEnd)}`
-    setMeetingDateTime(newDateTime)
+    updateMeeting(newDateTime, {
+      id: `meeting-rescheduled-${Date.now()}`,
+      type: 'rescheduled',
+      timestamp: formatTimestamp(new Date()),
+      actor: CURRENT_USER,
+      details: `Rescheduled the assessment meeting from ${meetingDateTime} to ${newDateTime}. Invitation sent to ${rescheduleRecipients.join(', ')}.`,
+      reason: rescheduleReason.trim(),
+    })
     setShowRescheduleModal(false)
     showTimedToast(`Meeting rescheduled to ${newDateTime}`)
   }
@@ -337,8 +411,19 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
     })
   )
 
+  const confidenceChangeEvents: AuditTrailEvent[] = confidenceChanges.map((change) => ({
+    id: change.id,
+    title: `Confidence Score Updated (Question ${change.questionId})`,
+    category: 'Admin',
+    timestamp: change.date,
+    actor: change.changedBy,
+    details: `Changed from ${change.from} to ${change.to}. Reason: ${change.reason}`,
+    icon: Pencil,
+  }))
+
   // Requirement 2: Audit Trail Timeline Data
   const auditEvents: AuditTrailEvent[] = [
+    ...confidenceChangeEvents,
     ...reviewerCommentEvents,
     {
       id: 'aud-8',
@@ -427,6 +512,23 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
     },
   ]
 
+  const meetingLogEvents: AuditTrailEvent[] = meetingLog.map((entry) => ({
+    id: entry.id,
+    title: entry.type === 'cancelled' ? 'Meeting Cancelled' : 'Meeting Rescheduled',
+    category: 'Admin',
+    timestamp: entry.timestamp,
+    actor: entry.actor,
+    details: entry.reason ? `${entry.details} Reason: ${entry.reason}` : entry.details,
+    icon: entry.type === 'cancelled' ? XCircle : Calendar,
+  }))
+
+  // Scheduled and cancelled assessments only log events up to the meeting being scheduled,
+  // followed by any reschedule or cancellation
+  const PRE_CALL_EVENT_IDS = ['aud-3', 'aud-2', 'aud-1']
+  const displayedAuditEvents = isScheduled
+    ? [...meetingLogEvents, ...auditEvents.filter((event) => PRE_CALL_EVENT_IDS.includes(event.id))]
+    : auditEvents
+
   const handleCopyMeetingUrl = () => {
     navigator.clipboard.writeText(meetingUrl)
     setCopiedUrl(true)
@@ -494,7 +596,7 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
     setTimeout(() => setToastMessage(null), 3000)
   }
 
-  const questions = [
+  const baseQuestions = [
     {
       id: 1,
       category: 'Corporate',
@@ -610,6 +712,49 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
     },
   ]
 
+  // A reviewer's confidence change replaces the agent's score everywhere it is used
+  const questions = baseQuestions.map((q) => {
+    const latestChange = confidenceChanges.find((change) => change.questionId === q.id)
+    if (!latestChange) return q
+    return {
+      ...q,
+      confidence: latestChange.to,
+      confidenceType:
+        latestChange.to === 'High confidence' ? ('success' as const) : ('warning' as const),
+      confidenceTooltip: `${latestChange.to}: Updated by ${latestChange.changedBy}. Reason: ${latestChange.reason}`,
+    }
+  })
+
+  // Confidence can be changed for answered questions once the call has produced results
+  const canEditConfidence = currentStatus === 'awaiting_evidence' || currentStatus === 'completed'
+  const confidenceEditQuestion = questions.find((q) => q.id === confidenceEditQuestionId)
+
+  const openConfidenceModal = (questionId: number) => {
+    setConfidenceEditQuestionId(questionId)
+    setNewConfidence(null)
+    setConfidenceReason('')
+  }
+
+  const handleConfirmConfidenceChange = () => {
+    const reason = confidenceReason.trim()
+    if (!confidenceEditQuestion || !newConfidence || !reason) return
+    if (newConfidence === confidenceEditQuestion.confidence) return
+    setConfidenceChanges((prev) => [
+      {
+        id: `confidence-${confidenceEditQuestion.id}-${Date.now()}`,
+        questionId: confidenceEditQuestion.id,
+        from: confidenceEditQuestion.confidence as ConfidenceLevel,
+        to: newConfidence,
+        reason,
+        changedBy: CURRENT_USER,
+        date: formatTimestamp(new Date()),
+      },
+      ...prev,
+    ])
+    setConfidenceEditQuestionId(null)
+    showTimedToast(`Question ${confidenceEditQuestion.id} confidence updated to ${newConfidence}`)
+  }
+
   const lowConfidenceQuestions = questions.filter((q) => q.confidence === 'Low confidence')
   const allLowConfidenceCommentsAdded =
     lowConfidenceQuestions.length === 0 ||
@@ -626,7 +771,7 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-[#0d212c] pb-16 font-sans w-full">
+    <div className="bg-[#f8fafc] text-[#0d212c] p-4 font-sans w-full">
       {/* Toast Notification */}
       {/* Toast Notification — subtle light semantic styling */}
       {toastMessage && (
@@ -655,14 +800,14 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
             </div>
             <div className="flex flex-col gap-1.5">
               <label htmlFor="cancel-reason" className="text-xs font-bold text-[#0d212c]">
-                Reason
+                Reason <span className="text-red-500">*</span>
               </label>
               <textarea
                 id="cancel-reason"
                 value={cancelReason}
                 onChange={(e) => setCancelReason(e.target.value)}
                 rows={4}
-                placeholder="Describe the reason for cancelling this meeting (optional)..."
+                placeholder="Describe the reason for cancelling this meeting..."
                 className="w-full px-4 py-3 rounded-xl border border-[#cbd5e1] text-xs font-medium text-[#0d212c] outline-none focus:border-[#94a3b8] bg-white resize-none"
               />
             </div>
@@ -675,7 +820,8 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
               </button>
               <button
                 onClick={handleConfirmCancel}
-                className="py-3 rounded-xl bg-[#dc2626] hover:bg-[#b91c1c] text-white text-xs font-bold transition cursor-pointer border-0"
+                disabled={!cancelReason.trim()}
+                className="py-3 rounded-xl bg-[#dc2626] hover:bg-[#b91c1c] text-white text-xs font-bold transition cursor-pointer border-0 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Confirm Cancel
               </button>
@@ -833,8 +979,109 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
           </div>
         </div>
       )}
+      {/* Change Confidence Modal */}
+      {confidenceEditQuestion && (
+        <div className="fixed inset-0 z-50 bg-[#0d212c]/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="relative bg-white rounded-3xl max-w-lg w-full p-7 shadow-2xl border border-[#e2e8f0] flex flex-col gap-4 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-150">
+            <button
+              onClick={() => setConfidenceEditQuestionId(null)}
+              className="absolute top-5 right-5 p-1 rounded-lg text-slate-400 hover:text-[#0d212c] transition cursor-pointer"
+              aria-label="Close"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#ddf7f9] border border-[#36c0c9]/30 flex items-center justify-center">
+                <Pencil className="w-5 h-5 text-[#0d7280]" />
+              </div>
+              <h3 className="text-lg font-extrabold text-[#0d212c]">Change confidence score</h3>
+            </div>
+
+            <p className="text-xs text-[#0d212c] font-semibold leading-relaxed">
+              {confidenceEditQuestion.id}. [{confidenceEditQuestion.category}]{' '}
+              {confidenceEditQuestion.question}
+            </p>
+
+            <div className="flex items-center gap-2 text-xs text-[#64748b]">
+              <span>Current confidence:</span>
+              <StatusChip
+                label={confidenceEditQuestion.confidence}
+                status={confidenceEditQuestion.confidenceType}
+                dot={false}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <span className="text-xs font-bold text-[#0d212c]">
+                New confidence <span className="text-red-500">*</span>
+              </span>
+              <div className="grid grid-cols-3 gap-2">
+                {CONFIDENCE_LEVELS.map((level) => {
+                  const isCurrent = level === confidenceEditQuestion.confidence
+                  const isSelected = level === newConfidence
+                  return (
+                    <button
+                      key={level}
+                      onClick={() => setNewConfidence(level)}
+                      disabled={isCurrent}
+                      className={`py-2.5 rounded-xl border text-xs font-bold transition ${
+                        isSelected
+                          ? 'border-[#36c0c9] bg-[#ddf7f9] text-[#0d7280] cursor-pointer'
+                          : isCurrent
+                            ? 'border-[#e2e8f0] bg-slate-50 text-slate-400 cursor-not-allowed'
+                            : 'border-[#cbd5e1] bg-white text-[#0d212c] hover:border-[#94a3b8] cursor-pointer'
+                      }`}
+                    >
+                      {level.replace(' confidence', '')}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="confidence-reason" className="text-xs font-bold text-[#0d212c]">
+                Reason <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                id="confidence-reason"
+                value={confidenceReason}
+                onChange={(e) => setConfidenceReason(e.target.value)}
+                maxLength={500}
+                rows={4}
+                placeholder="Explain why the confidence score should be changed..."
+                className="w-full px-4 py-3 rounded-xl border border-[#cbd5e1] text-xs font-medium text-[#0d212c] outline-none focus:border-[#94a3b8] bg-white resize-none"
+              />
+              <div className="flex items-start justify-between gap-3 text-[11px] text-[#64748b]">
+                <span className="flex items-start gap-1.5">
+                  <Bot className="w-3.5 h-3.5 shrink-0 mt-px" />
+                  This reason is shared with the agent as feedback to improve future confidence
+                  scoring.
+                </span>
+                <span className="shrink-0">{confidenceReason.length}/500</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-4 border-t border-[#e2e8f0]">
+              <button
+                onClick={() => setConfidenceEditQuestionId(null)}
+                className="py-3 rounded-xl border border-[#e2e8f0] bg-white text-xs font-bold text-[#0d212c] hover:bg-slate-50 transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmConfidenceChange}
+                disabled={!newConfidence || !confidenceReason.trim()}
+                className="py-3 rounded-xl bg-[#36c0c9] hover:bg-[#2badb6] text-white text-xs font-bold transition cursor-pointer border-0 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Update confidence
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Breadcrumb Menu (Moved outside of Header Card) */}
-      <div className="w-full px-6 lg:px-10 pt-4 pb-1 text-xs font-medium flex items-center gap-1.5 text-[#64748b]">
+      <div className="w-full pb-1 text-xs font-medium flex items-center gap-1.5 text-[#64748b]">
         <button onClick={onBack} className="hover:text-[#0d7280] cursor-pointer">
           M42 admin
         </button>
@@ -846,7 +1093,7 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
         <span className="text-[#36c0c9] font-bold">Assessment details</span>
       </div>
       {/* Header Container Card — Very light shade of light primary color with minimal stroke */}
-      <div className="w-full px-6 lg:px-10 pt-3">
+      <div className="w-full pt-3">
         <div className="bg-[#ddf7f9]/20 rounded-3xl border border-[#36c0c9]/30 p-6 sm:p-8 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex flex-col gap-3">
             {/* Main Title & Subtitle */}
@@ -868,7 +1115,9 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
                     ? 'Completed'
                     : currentStatus === 'ready'
                       ? 'Ready'
-                      : currentStatus === 'scheduled'
+                      : currentStatus === 'cancelled'
+                        ? 'Cancelled'
+                        : currentStatus === 'scheduled'
                         ? 'Scheduled'
                         : currentStatus === 'finalised'
                           ? 'Finalised'
@@ -879,7 +1128,9 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
                     ? 'success'
                     : currentStatus === 'ready'
                       ? 'info'
-                      : currentStatus === 'scheduled'
+                      : currentStatus === 'cancelled'
+                        ? 'error'
+                        : currentStatus === 'scheduled'
                         ? 'info'
                         : currentStatus === 'finalised'
                           ? 'finalised'
@@ -920,7 +1171,7 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
         </div>
       </div>
       {/* Main Content Area */}
-      <div className="w-full px-6 lg:px-10 mt-6 flex flex-col gap-6">
+      <div className="w-full mt-6 flex flex-col gap-6">
         {/* Navigation Tabs Bar — Grey horizontal line spans ONLY both tabs */}
         <div className="flex items-center justify-between pb-0">
           <div className="flex items-center gap-8 border-b border-[#e2e8f0]">
@@ -953,7 +1204,7 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
           </div>
 
           <div className="flex items-center gap-3 pb-3">
-            {currentStatus !== 'scheduled' && (
+            {!isScheduled && (
               <button
                 onClick={() => alert(`Downloading PDF report for ${assessment.vendor}...`)}
                 className="px-4 py-2 rounded-xl border border-[#cbd5e1] hover:border-[#94a3b8] hover:bg-slate-50 text-[#0d212c] bg-white font-bold text-xs flex items-center gap-2 shadow-2xs cursor-pointer transition"
@@ -962,7 +1213,7 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
                 <span>Download PDF</span>
               </button>
             )}
-            {currentStatus !== 'scheduled' && (
+            {!isScheduled && (
               <button
                 onClick={handleFinalize}
                 disabled={currentStatus === 'finalised' || !allLowConfidenceCommentsAdded}
@@ -987,20 +1238,6 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
 
         {/* Audit Trail Tab View */}
         {activeTab === 'audit_trail' ? (
-          currentStatus === 'scheduled' ? (
-            <div className="bg-white p-8 sm:p-12 rounded-2xl border border-[#e2e8f0] shadow-xs flex flex-col items-center justify-center text-center gap-3 min-h-[260px]">
-              <div className="w-12 h-12 rounded-2xl bg-[#ddf7f9] flex items-center justify-center text-[#36c0c9]">
-                <Clock className="w-6 h-6" />
-              </div>
-              <div className="flex flex-col gap-1 max-w-md">
-                <h4 className="font-extrabold text-sm text-[#0d212c]">Audit log scheduled</h4>
-                <p className="text-xs text-[#64748b] leading-relaxed">
-                  The audit trail and call transcript will be generated automatically after the
-                  assessment meeting is completed.
-                </p>
-              </div>
-            </div>
-          ) : (
             <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -1013,15 +1250,15 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
                   </p>
                 </div>
                 <span className="text-xs font-semibold text-[#0f766e] bg-[#ddf7f9] px-3 py-1 rounded-full">
-                  {auditEvents.length} events logged
+                  {displayedAuditEvents.length} events logged
                 </span>
               </div>
 
               <div className="bg-white p-6 sm:p-8 rounded-2xl border border-[#e2e8f0] shadow-xs">
                 <div className="relative pl-2 flex flex-col gap-8">
-                  {auditEvents.map((event, idx) => {
+                  {displayedAuditEvents.map((event, idx) => {
                     const EventIcon = event.icon
-                    const isLast = idx === auditEvents.length - 1
+                    const isLast = idx === displayedAuditEvents.length - 1
                     return (
                       <div key={event.id} className="relative pl-8 flex flex-col gap-1.5">
                         {/* Vertical connecting line (only rendered if not the last event) */}
@@ -1091,7 +1328,6 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
                 </div>
               </div>
             </div>
-          )
         ) : (
           <>
             {/* Meeting summary: cancel / reschedule for scheduled assessments */}
@@ -1101,23 +1337,24 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
                 <div className="bg-white p-5 rounded-2xl border border-[#e2e8f0] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="flex flex-col gap-1">
                     <span className="text-xs font-bold text-[#0d212c]">
-                      {meetingCancelled ? 'Meeting Cancelled' : 'Scheduled Session Details'}
+                      {isCancelled ? 'Meeting Cancelled' : 'Scheduled Session Details'}
                     </span>
                     <span className="text-xs text-[#64748b]">
                       Scheduled Date &amp; Time:{' '}
                       <strong
-                        className={`font-bold ${meetingCancelled ? 'text-[#64748b] line-through' : 'text-[#0d212c]'}`}
+                        className={`font-bold ${isCancelled ? 'text-[#64748b] line-through' : 'text-[#0d212c]'}`}
                       >
                         {meetingDateTime}
                       </strong>
                     </span>
-                    {meetingCancelled && cancelReasonSaved && (
+                    {cancelEntry && (
                       <span className="text-xs text-[#64748b]">
-                        Reason: <span className="text-[#0d212c]">{cancelReasonSaved}</span>
+                        Cancelled by {cancelEntry.actor} on {cancelEntry.timestamp}. Reason:{' '}
+                        <span className="text-[#0d212c]">{cancelEntry.reason}</span>
                       </span>
                     )}
                   </div>
-                  {!meetingCancelled && (
+                  {!isCancelled && (
                     <div className="flex items-center gap-6 shrink-0">
                       <button
                         onClick={() => setShowCancelModal(true)}
@@ -1408,6 +1645,16 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
                           </h4>
 
                           {!isScheduled && (
+                            <div className="flex items-center gap-3 shrink-0">
+                            {canEditConfidence && q.answer !== '(not answered)' && (
+                              <button
+                                onClick={() => openConfidenceModal(q.id)}
+                                className="flex items-center gap-1 text-xs font-bold text-[#36c0c9] hover:text-[#2badb6] transition cursor-pointer bg-transparent border-0"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                                <span>Change confidence</span>
+                              </button>
+                            )}
                             <div className="relative group shrink-0">
                               <div className="cursor-default">
                                 <StatusChip
@@ -1420,6 +1667,7 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
                                 {q.confidenceTooltip}
                               </div>
                             </div>
+                            </div>
                           )}
                         </div>
 
@@ -1431,6 +1679,28 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
                               : q.answer}
                           </span>
                         </div>
+
+                        {!isScheduled &&
+                          (() => {
+                            const latestChange = confidenceChanges.find(
+                              (change) => change.questionId === q.id
+                            )
+                            if (!latestChange) return null
+                            return (
+                              <div className="p-3 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] text-[11px] text-[#64748b] flex flex-col gap-0.5">
+                                <span>
+                                  Confidence changed from{' '}
+                                  <strong className="text-[#0d212c]">{latestChange.from}</strong> to{' '}
+                                  <strong className="text-[#0d212c]">{latestChange.to}</strong> by{' '}
+                                  <strong className="text-[#0d212c]">{latestChange.changedBy}</strong>{' '}
+                                  · {latestChange.date}
+                                </span>
+                                <span>
+                                  Reason: <span className="text-[#0d212c]">{latestChange.reason}</span>
+                                </span>
+                              </div>
+                            )
+                          })()}
 
                         {!isScheduled && showAnswerKey && (
                           <>

@@ -15,7 +15,7 @@ export interface AgentsScreenProps {
 
 export const AgentsScreen: React.FC<AgentsScreenProps> = ({ className = '' }) => {
   return (
-    <div className={`w-full py-2 ${className}`}>
+    <div className={`w-full ${className}`}>
       <AgentManagement />
     </div>
   )

@@ -393,7 +393,7 @@ export const AgentManagement: React.FC<AgentManagementProps> = ({
 
   return (
     <div
-      className={`flex flex-col gap-5 w-full px-6 lg:px-10 py-4 font-sans text-[#0d212c] ${className}`}
+      className={`flex flex-col gap-5 w-full p-4 font-sans text-[#0d212c] ${className}`}
     >
       {/* Toast Notification — subtle light semantic styling */}
       {toastMessage && (

@@ -4,7 +4,12 @@ import React, { useState, useMemo } from 'react'
 import { ChevronLeft, ChevronRight, Users, RefreshCw, Folder, Info } from 'lucide-react'
 import { StatusChip } from '@/components/atoms/StatusChip'
 import { SearchBar } from '@/components/molecules/SearchBar'
-import { AssessmentDetailScreen, AssessmentDetailData } from './AssessmentDetailScreen'
+import {
+  AssessmentDetailScreen,
+  AssessmentDetailData,
+  AssessmentStatus,
+  MeetingLogEntry,
+} from './AssessmentDetailScreen'
 
 interface AssessmentRow {
   id: string
@@ -12,9 +17,11 @@ interface AssessmentRow {
   vendor: string
   questionnaire: string
   round: string
-  status: 'awaiting_evidence' | 'completed' | 'scheduled' | 'finalised' | 'ready'
+  status: AssessmentStatus
   score: string
   createdDate: string
+  meetingDateTime?: string
+  meetingLog?: MeetingLogEntry[]
 }
 
 export const DashboardScreen: React.FC = () => {
@@ -169,6 +176,11 @@ export const DashboardScreen: React.FC = () => {
       label: 'Scheduled',
       count: assessments.filter((a) => a.status === 'scheduled').length,
     },
+    {
+      key: 'cancelled',
+      label: 'Cancelled',
+      count: assessments.filter((a) => a.status === 'cancelled').length,
+    },
   ]
 
   const handleFilterClick = (key: string) => {
@@ -199,11 +211,22 @@ export const DashboardScreen: React.FC = () => {
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
   const paginatedAssessments = filteredAssessments.slice(startIndex, startIndex + ITEMS_PER_PAGE)
 
-  const handleUpdateStatus = (id: string, newStatus: 'ready' | 'finalised' | 'completed') => {
+  const handleUpdateStatus = (
+    id: string,
+    newStatus: 'ready' | 'finalised' | 'completed' | 'cancelled'
+  ) => {
     setAssessments((prev) => prev.map((a) => (a.id === id ? { ...a, status: newStatus } : a)))
     if (selectedAssessment && selectedAssessment.id === id) {
       setSelectedAssessment((prev) => (prev ? { ...prev, status: newStatus } : null))
     }
+  }
+
+  // Keeps reschedule / cancellation details when navigating back to the dashboard
+  const handleMeetingChange = (
+    id: string,
+    update: { meetingDateTime: string; meetingLog: MeetingLogEntry[] }
+  ) => {
+    setAssessments((prev) => prev.map((a) => (a.id === id ? { ...a, ...update } : a)))
   }
 
   if (selectedAssessment) {
@@ -212,12 +235,13 @@ export const DashboardScreen: React.FC = () => {
         assessment={selectedAssessment}
         onBack={() => setSelectedAssessment(null)}
         onStatusChange={(newStatus) => handleUpdateStatus(selectedAssessment.id, newStatus)}
+        onMeetingChange={(update) => handleMeetingChange(selectedAssessment.id, update)}
       />
     )
   }
 
   return (
-    <div className="flex flex-col gap-6 w-full px-6 lg:px-10 py-4 text-[#0d212c]">
+    <div className="flex flex-col gap-6 w-full p-4 text-[#0d212c]">
       {/* Breadcrumb Menu */}
       <div className="text-xs font-semibold text-[#64748b] flex items-center gap-1.5">
         <span>M42 admin</span>
@@ -428,7 +452,9 @@ export const DashboardScreen: React.FC = () => {
                             ? 'Awaiting evidence'
                             : row.status === 'ready'
                               ? 'Ready'
-                              : row.status === 'scheduled'
+                              : row.status === 'cancelled'
+                                ? 'Cancelled'
+                                : row.status === 'scheduled'
                                 ? 'Scheduled'
                                 : row.status === 'finalised'
                                   ? 'Finalised'
@@ -439,7 +465,9 @@ export const DashboardScreen: React.FC = () => {
                             ? 'warning'
                             : row.status === 'ready'
                               ? 'info'
-                              : row.status === 'scheduled'
+                              : row.status === 'cancelled'
+                                ? 'error'
+                                : row.status === 'scheduled'
                                 ? 'info'
                                 : row.status === 'finalised'
                                   ? 'finalised'
