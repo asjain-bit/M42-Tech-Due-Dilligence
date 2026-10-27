@@ -32,12 +32,7 @@ import {
 import { StatusChip } from '@/components/atoms/StatusChip'
 
 export type AssessmentStatus =
-  | 'awaiting_evidence'
-  | 'completed'
-  | 'scheduled'
-  | 'cancelled'
-  | 'finalised'
-  | 'ready'
+  'awaiting_evidence' | 'completed' | 'scheduled' | 'cancelled' | 'finalised' | 'ready'
 
 export interface MeetingLogEntry {
   id: string
@@ -70,7 +65,11 @@ interface AssessmentDetailScreenProps {
 
 type ConfidenceLevel = 'High confidence' | 'Medium confidence' | 'Low confidence'
 
-const CONFIDENCE_LEVELS: ConfidenceLevel[] = ['High confidence', 'Medium confidence', 'Low confidence']
+const CONFIDENCE_LEVELS: ConfidenceLevel[] = [
+  'High confidence',
+  'Medium confidence',
+  'Low confidence',
+]
 
 interface ConfidenceChange {
   id: string
@@ -1118,10 +1117,10 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
                       : currentStatus === 'cancelled'
                         ? 'Cancelled'
                         : currentStatus === 'scheduled'
-                        ? 'Scheduled'
-                        : currentStatus === 'finalised'
-                          ? 'Finalised'
-                          : 'Awaiting evidence'
+                          ? 'Scheduled'
+                          : currentStatus === 'finalised'
+                            ? 'Finalised'
+                            : 'Awaiting evidence'
                 }
                 status={
                   currentStatus === 'completed'
@@ -1131,10 +1130,10 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
                       : currentStatus === 'cancelled'
                         ? 'error'
                         : currentStatus === 'scheduled'
-                        ? 'info'
-                        : currentStatus === 'finalised'
-                          ? 'finalised'
-                          : 'warning'
+                          ? 'info'
+                          : currentStatus === 'finalised'
+                            ? 'finalised'
+                            : 'warning'
                 }
                 dot={false}
               />
@@ -1238,96 +1237,94 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
 
         {/* Audit Trail Tab View */}
         {activeTab === 'audit_trail' ? (
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-base font-extrabold text-[#0d212c]">
-                    Assessment Audit Trail
-                  </h3>
-                  <p className="text-xs text-[#64748b] mt-0.5">
-                    Complete chronological activity log capturing all system events, AI agent
-                    interactions, and admin actions.
-                  </p>
-                </div>
-                <span className="text-xs font-semibold text-[#0f766e] bg-[#ddf7f9] px-3 py-1 rounded-full">
-                  {displayedAuditEvents.length} events logged
-                </span>
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-extrabold text-[#0d212c]">Assessment Audit Trail</h3>
+                <p className="text-xs text-[#64748b] mt-0.5">
+                  Complete chronological activity log capturing all system events, AI agent
+                  interactions, and admin actions.
+                </p>
               </div>
+              <span className="text-xs font-semibold text-[#0f766e] bg-[#ddf7f9] px-3 py-1 rounded-full">
+                {displayedAuditEvents.length} events logged
+              </span>
+            </div>
 
-              <div className="bg-white p-6 sm:p-8 rounded-2xl border border-[#e2e8f0] shadow-xs">
-                <div className="relative pl-2 flex flex-col gap-8">
-                  {displayedAuditEvents.map((event, idx) => {
-                    const EventIcon = event.icon
-                    const isLast = idx === displayedAuditEvents.length - 1
-                    return (
-                      <div key={event.id} className="relative pl-8 flex flex-col gap-1.5">
-                        {/* Vertical connecting line (only rendered if not the last event) */}
-                        {!isLast && (
-                          <div className="absolute left-[13px] top-7 bottom-0 w-0.5 bg-[#e2e8f0] translate-y-1" />
-                        )}
+            <div className="bg-white p-6 sm:p-8 rounded-2xl border border-[#e2e8f0] shadow-xs">
+              <div className="relative pl-2 flex flex-col gap-8">
+                {displayedAuditEvents.map((event, idx) => {
+                  const EventIcon = event.icon
+                  const isLast = idx === displayedAuditEvents.length - 1
+                  return (
+                    <div key={event.id} className="relative pl-8 flex flex-col gap-1.5">
+                      {/* Vertical connecting line (only rendered if not the last event) */}
+                      {!isLast && (
+                        <div className="absolute left-[13px] top-7 bottom-0 w-0.5 bg-[#e2e8f0] translate-y-1" />
+                      )}
 
-                        {/* Timeline Node Icon Circle (100% Primary Light Color Fill, No Stroke, White Icon) */}
-                        <div className="absolute left-0 top-0.5 w-7 h-7 rounded-full bg-[#36c0c9] flex items-center justify-center text-white shadow-2xs z-10">
-                          <EventIcon className="w-3.5 h-3.5 text-white" />
-                        </div>
-
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <div className="flex items-center gap-2.5">
-                            <h4 className="font-extrabold text-sm text-[#0d212c]">{event.title}</h4>
-                            <span
-                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                event.category === 'Admin'
-                                  ? 'bg-purple-100 text-purple-800'
-                                  : event.category === 'AI Agent'
-                                    ? 'bg-[#ddf7f9] text-[#0f766e]'
-                                    : event.category === 'Vendor'
-                                      ? 'bg-blue-100 text-blue-800'
-                                      : 'bg-slate-100 text-slate-700'
-                              }`}
-                            >
-                              {event.category}
-                            </span>
-                          </div>
-                          <span className="text-xs font-medium text-[#64748b] flex items-center gap-1">
-                            <Clock className="w-3.5 h-3.5 text-slate-400" />
-                            {event.timestamp}
-                          </span>
-                        </div>
-
-                        {/* Confidence chip placed BELOW the title (ONLY for Admin, AI Agent, Vendor - NOT System) */}
-                        {event.category !== 'System' && event.confidence && (
-                          <div className="flex items-center mt-0.5">
-                            <StatusChip
-                              label={event.confidence}
-                              status={
-                                event.confidence.startsWith('High')
-                                  ? 'success'
-                                  : event.confidence.startsWith('Low')
-                                    ? 'warning'
-                                    : 'warning'
-                              }
-                              dot={false}
-                            />
-                          </div>
-                        )}
-
-                        <p className="text-xs text-[#0d212c] leading-relaxed mt-0.5">
-                          {event.details}
-                        </p>
-
-                        <div className="text-[11px] text-[#64748b] font-medium flex items-center gap-1.5 mt-0.5">
-                          <User className="w-3 h-3 text-slate-400" />
-                          <span>
-                            Actor:{' '}
-                            <strong className="text-[#0d212c] font-semibold">{event.actor}</strong>
-                          </span>
-                        </div>
+                      {/* Timeline Node Icon Circle (100% Primary Light Color Fill, No Stroke, White Icon) */}
+                      <div className="absolute left-0 top-0.5 w-7 h-7 rounded-full bg-[#36c0c9] flex items-center justify-center text-white shadow-2xs z-10">
+                        <EventIcon className="w-3.5 h-3.5 text-white" />
                       </div>
-                    )
-                  })}
-                </div>
+
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-2.5">
+                          <h4 className="font-extrabold text-sm text-[#0d212c]">{event.title}</h4>
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              event.category === 'Admin'
+                                ? 'bg-purple-100 text-purple-800'
+                                : event.category === 'AI Agent'
+                                  ? 'bg-[#ddf7f9] text-[#0f766e]'
+                                  : event.category === 'Vendor'
+                                    ? 'bg-blue-100 text-blue-800'
+                                    : 'bg-slate-100 text-slate-700'
+                            }`}
+                          >
+                            {event.category}
+                          </span>
+                        </div>
+                        <span className="text-xs font-medium text-[#64748b] flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5 text-slate-400" />
+                          {event.timestamp}
+                        </span>
+                      </div>
+
+                      {/* Confidence chip placed BELOW the title (ONLY for Admin, AI Agent, Vendor - NOT System) */}
+                      {event.category !== 'System' && event.confidence && (
+                        <div className="flex items-center mt-0.5">
+                          <StatusChip
+                            label={event.confidence}
+                            status={
+                              event.confidence.startsWith('High')
+                                ? 'success'
+                                : event.confidence.startsWith('Low')
+                                  ? 'warning'
+                                  : 'warning'
+                            }
+                            dot={false}
+                          />
+                        </div>
+                      )}
+
+                      <p className="text-xs text-[#0d212c] leading-relaxed mt-0.5">
+                        {event.details}
+                      </p>
+
+                      <div className="text-[11px] text-[#64748b] font-medium flex items-center gap-1.5 mt-0.5">
+                        <User className="w-3 h-3 text-slate-400" />
+                        <span>
+                          Actor:{' '}
+                          <strong className="text-[#0d212c] font-semibold">{event.actor}</strong>
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
+          </div>
         ) : (
           <>
             {/* Meeting summary: cancel / reschedule for scheduled assessments */}
@@ -1646,27 +1643,27 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
 
                           {!isScheduled && (
                             <div className="flex items-center gap-3 shrink-0">
-                            {canEditConfidence && q.answer !== '(not answered)' && (
-                              <button
-                                onClick={() => openConfidenceModal(q.id)}
-                                className="flex items-center gap-1 text-xs font-bold text-[#36c0c9] hover:text-[#2badb6] transition cursor-pointer bg-transparent border-0"
-                              >
-                                <Pencil className="w-3.5 h-3.5" />
-                                <span>Change confidence</span>
-                              </button>
-                            )}
-                            <div className="relative group shrink-0">
-                              <div className="cursor-default">
-                                <StatusChip
-                                  label={q.confidence}
-                                  status={q.confidenceType}
-                                  dot={false}
-                                />
+                              {canEditConfidence && q.answer !== '(not answered)' && (
+                                <button
+                                  onClick={() => openConfidenceModal(q.id)}
+                                  className="flex items-center gap-1 text-xs font-bold text-[#36c0c9] hover:text-[#2badb6] transition cursor-pointer bg-transparent border-0"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                  <span>Change confidence</span>
+                                </button>
+                              )}
+                              <div className="relative group shrink-0">
+                                <div className="cursor-default">
+                                  <StatusChip
+                                    label={q.confidence}
+                                    status={q.confidenceType}
+                                    dot={false}
+                                  />
+                                </div>
+                                <div className="pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 absolute right-0 top-7 z-30 w-64 bg-[#0d212c] text-white text-xs p-3 rounded-xl shadow-xl border border-white/10">
+                                  {q.confidenceTooltip}
+                                </div>
                               </div>
-                              <div className="pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 absolute right-0 top-7 z-30 w-64 bg-[#0d212c] text-white text-xs p-3 rounded-xl shadow-xl border border-white/10">
-                                {q.confidenceTooltip}
-                              </div>
-                            </div>
                             </div>
                           )}
                         </div>
@@ -1692,11 +1689,14 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
                                   Confidence changed from{' '}
                                   <strong className="text-[#0d212c]">{latestChange.from}</strong> to{' '}
                                   <strong className="text-[#0d212c]">{latestChange.to}</strong> by{' '}
-                                  <strong className="text-[#0d212c]">{latestChange.changedBy}</strong>{' '}
+                                  <strong className="text-[#0d212c]">
+                                    {latestChange.changedBy}
+                                  </strong>{' '}
                                   · {latestChange.date}
                                 </span>
                                 <span>
-                                  Reason: <span className="text-[#0d212c]">{latestChange.reason}</span>
+                                  Reason:{' '}
+                                  <span className="text-[#0d212c]">{latestChange.reason}</span>
                                 </span>
                               </div>
                             )

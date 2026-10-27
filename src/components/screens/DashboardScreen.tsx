@@ -455,10 +455,10 @@ export const DashboardScreen: React.FC = () => {
                               : row.status === 'cancelled'
                                 ? 'Cancelled'
                                 : row.status === 'scheduled'
-                                ? 'Scheduled'
-                                : row.status === 'finalised'
-                                  ? 'Finalised'
-                                  : 'Completed'
+                                  ? 'Scheduled'
+                                  : row.status === 'finalised'
+                                    ? 'Finalised'
+                                    : 'Completed'
                         }
                         status={
                           row.status === 'awaiting_evidence'
@@ -468,10 +468,10 @@ export const DashboardScreen: React.FC = () => {
                               : row.status === 'cancelled'
                                 ? 'error'
                                 : row.status === 'scheduled'
-                                ? 'info'
-                                : row.status === 'finalised'
-                                  ? 'finalised'
-                                  : 'success'
+                                  ? 'info'
+                                  : row.status === 'finalised'
+                                    ? 'finalised'
+                                    : 'success'
                         }
                         dot={false}
                       />
