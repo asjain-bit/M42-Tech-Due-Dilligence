@@ -32,6 +32,9 @@ export interface VendorDispatchData {
   recipients?: string[]
 }
 
+// Dashboard assessments use PR-115 to PR-126, so new dispatches continue from PR-127
+let nextCaseNumber = 127
+
 interface ConfigureVendorCallScreenProps {
   vendor: VendorDispatchData
   onBack: () => void
@@ -43,6 +46,7 @@ export const ConfigureVendorCallScreen: React.FC<ConfigureVendorCallScreenProps>
   onBack,
   onComplete: _onComplete,
 }) => {
+  const [caseId] = useState(() => `PR-${nextCaseNumber++}`)
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1)
   const [hasCompletedStep2, setHasCompletedStep2] = useState(false)
   const [isDispatched, setIsDispatched] = useState(false)
@@ -338,6 +342,7 @@ export const ConfigureVendorCallScreen: React.FC<ConfigureVendorCallScreenProps>
     return (
       <CallRoomScreen
         vendor={vendor}
+        caseId={caseId}
         onBack={() => setShowCallRoom(false)}
         onExitToVendors={onBack}
         timing={timing}
@@ -440,7 +445,14 @@ export const ConfigureVendorCallScreen: React.FC<ConfigureVendorCallScreenProps>
               </div>
             </div>
 
-            <div className="border-t border-b border-[#e2e8f0]/80 py-4 grid grid-cols-2 gap-y-4 gap-x-6 text-xs">
+            <div className="border-t border-b border-[#e2e8f0]/80 py-4 grid grid-cols-3 gap-y-4 gap-x-6 text-xs">
+              <div>
+                <span className="text-[10px] font-extrabold text-[#64748b] uppercase tracking-wider block mb-1">
+                  CASE ID
+                </span>
+                <span className="font-bold text-[#0d212c]">{caseId}</span>
+              </div>
+
               <div>
                 <span className="text-[10px] font-extrabold text-[#64748b] uppercase tracking-wider block mb-1">
                   ROUND
@@ -1214,6 +1226,10 @@ export const ConfigureVendorCallScreen: React.FC<ConfigureVendorCallScreenProps>
 
                 <div className="divide-y divide-[#e2e8f0]/80 flex flex-col text-xs">
                   <div className="py-3 flex justify-between">
+                    <span className="text-[#64748b]">Case ID:</span>
+                    <span className="font-bold text-[#0d212c]">{caseId}</span>
+                  </div>
+                  <div className="py-3 flex justify-between">
                     <span className="text-[#64748b]">Target vendor:</span>
                     <span className="font-bold text-[#0d212c]">{vendor.name}</span>
                   </div>
@@ -1290,6 +1306,10 @@ export const ConfigureVendorCallScreen: React.FC<ConfigureVendorCallScreenProps>
 
             {/* Requirement 8: Replace Timezone field with START & END TIME (10:30 AM - 12:30 PM GST) */}
             <div className="divide-y divide-[#e2e8f0]/60 flex flex-col">
+              <div className="py-2.5 flex justify-between">
+                <span className="text-[#64748b]">CASE ID</span>
+                <span className="font-bold text-[#0d212c]">{caseId}</span>
+              </div>
               <div className="py-2.5 flex justify-between">
                 <span className="text-[#64748b]">CALL TYPE</span>
                 <span className="font-bold text-[#0d212c]">Assessment round</span>

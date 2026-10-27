@@ -10,6 +10,7 @@ export interface QuestionItem {
   responseCue: string
   researchNeeded: boolean
   attachmentRequired: boolean
+  requiredQuestion?: boolean
 }
 
 export interface QuestionnaireDetailData {
@@ -45,6 +46,7 @@ export const QuestionnaireDetailScreen: React.FC<QuestionnaireDetailScreenProps>
   const [newResponseCue, setNewResponseCue] = useState('')
   const [newResearchNeeded, setNewResearchNeeded] = useState(false)
   const [newAttachmentRequired, setNewAttachmentRequired] = useState(false)
+  const [newRequiredQuestion, setNewRequiredQuestion] = useState(false)
 
   // Questions list
   const [questions, setQuestions] = useState<QuestionItem[]>(
@@ -135,6 +137,7 @@ export const QuestionnaireDetailScreen: React.FC<QuestionnaireDetailScreenProps>
         'Provide explicit operational proof and supporting compliance evidence.',
       researchNeeded: newResearchNeeded,
       attachmentRequired: newAttachmentRequired,
+      requiredQuestion: newRequiredQuestion,
     }
 
     setQuestions([...questions, newQuestionObj])
@@ -142,6 +145,7 @@ export const QuestionnaireDetailScreen: React.FC<QuestionnaireDetailScreenProps>
     setNewResponseCue('')
     setNewResearchNeeded(false)
     setNewAttachmentRequired(false)
+    setNewRequiredQuestion(false)
     setShowAddQuestionModal(false)
     showToast('New question added successfully!')
   }
@@ -416,7 +420,7 @@ export const QuestionnaireDetailScreen: React.FC<QuestionnaireDetailScreenProps>
               />
             </div>
 
-            {/* Checkboxes: Research needed | Attachment required */}
+            {/* Checkboxes: Research needed | Attachment required | Required question */}
             <div className="flex items-center gap-6 pt-2">
               <Checkbox
                 label="Research needed"
@@ -429,6 +433,12 @@ export const QuestionnaireDetailScreen: React.FC<QuestionnaireDetailScreenProps>
                 checked={q.attachmentRequired}
                 disabled={!isEditing}
                 onChange={(e) => handleQuestionChange(q.id, 'attachmentRequired', e.target.checked)}
+              />
+              <Checkbox
+                label="Required Question"
+                checked={Boolean(q.requiredQuestion)}
+                disabled={!isEditing}
+                onChange={(e) => handleQuestionChange(q.id, 'requiredQuestion', e.target.checked)}
               />
             </div>
           </div>
@@ -488,6 +498,11 @@ export const QuestionnaireDetailScreen: React.FC<QuestionnaireDetailScreenProps>
                   label="Attachment required"
                   checked={newAttachmentRequired}
                   onChange={(e) => setNewAttachmentRequired(e.target.checked)}
+                />
+                <Checkbox
+                  label="Required Question"
+                  checked={newRequiredQuestion}
+                  onChange={(e) => setNewRequiredQuestion(e.target.checked)}
                 />
               </div>
 

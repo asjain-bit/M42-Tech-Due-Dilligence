@@ -32,6 +32,7 @@ interface TranscriptEntry {
 
 interface CallRoomScreenProps {
   vendor: VendorDispatchData
+  caseId?: string
   onBack: () => void
   onExitToVendors?: () => void
   userName?: string
@@ -79,6 +80,7 @@ const sampleTranscript: TranscriptEntry[] = [
 
 export const CallRoomScreen: React.FC<CallRoomScreenProps> = ({
   vendor,
+  caseId,
   onBack,
   onExitToVendors,
   userName = 'Zaid Al Ali',
@@ -279,6 +281,9 @@ export const CallRoomScreen: React.FC<CallRoomScreenProps> = ({
               <p className="text-xs text-[#64748b] font-medium">
                 Select your role to enter the call room
               </p>
+              {caseId && (
+                <span className="text-[11px] font-bold text-[#36c0c9]">Case ID: {caseId}</span>
+              )}
             </div>
 
             <div className="bg-white rounded-3xl border border-[#e2e8f0] shadow-xl p-7 flex flex-col gap-4">
@@ -444,6 +449,9 @@ export const CallRoomScreen: React.FC<CallRoomScreenProps> = ({
                 {vendor.name}
               </h1>
               <p className="text-xs text-[#64748b] font-medium">{vendor.sublabel}</p>
+              {caseId && (
+                <span className="text-[11px] font-bold text-[#36c0c9]">Case ID: {caseId}</span>
+              )}
             </div>
 
             <div className="bg-white rounded-3xl border border-[#e2e8f0] shadow-xl p-7 flex flex-col gap-5">
@@ -476,7 +484,7 @@ export const CallRoomScreen: React.FC<CallRoomScreenProps> = ({
                   AI DISCLOSURE
                 </span>
                 <p className="text-xs text-[#64748b] leading-relaxed">
-                  I am an AI agent — not a human. I am conducting this structured vendor due-diligence assessment on behalf of M42/Malaffi across the relevant domain teams. This call is recorded and transcribed for assessment purposes. However, while the Agent is on Hold, the conversation will be recorded but will not be transcribed. By joining you consent to recording. AI voice processing is performed by Microsoft Azure outside the UAE as the EU/Sweden are recognised as adequate.
+                  I am an AI agent — not a human. I am conducting this structured vendor due-diligence assessment on behalf of M42/Malaffi across the relevant domain teams. This call is recorded and transcribed for assessment purposes. No audio recorded while the agent is on hold. By joining you consent to recording. AI voice processing is performed by Microsoft Azure outside the UAE as the EU/Sweden are recognised as adequate.
                 </p>
               </div>
 
@@ -540,6 +548,9 @@ export const CallRoomScreen: React.FC<CallRoomScreenProps> = ({
                     {vendor.name}
                   </h1>
                   <p className="text-xs text-[#64748b] font-medium">Vendor Identity Verification</p>
+                  {caseId && (
+                    <span className="text-[11px] font-bold text-[#36c0c9]">Case ID: {caseId}</span>
+                  )}
                 </div>
 
                 <div className="bg-white rounded-3xl border border-[#e2e8f0] shadow-xl p-7 flex flex-col gap-4">
@@ -594,7 +605,7 @@ export const CallRoomScreen: React.FC<CallRoomScreenProps> = ({
                       AI DISCLOSURE
                     </span>
                     <p className="text-xs text-[#64748b] leading-relaxed">
-                      I am an AI agent — not a human. I am conducting this structured vendor due-diligence assessment on behalf of M42/Malaffi across the relevant domain teams. This call is recorded and transcribed for assessment purposes. However, while the Agent is on Hold, the conversation will be recorded but will not be transcribed. By joining you consent to recording. AI voice processing is performed by Microsoft Azure outside the UAE as the EU/Sweden are recognised as adequate.
+                      I am an AI agent — not a human. I am conducting this structured vendor due-diligence assessment on behalf of M42/Malaffi across the relevant domain teams. This call is recorded and transcribed for assessment purposes. No audio recorded while the agent is on hold. By joining you consent to recording. AI voice processing is performed by Microsoft Azure outside the UAE as the EU/Sweden are recognised as adequate.
                     </p>
                   </div>
 
@@ -1001,7 +1012,7 @@ export const CallRoomScreen: React.FC<CallRoomScreenProps> = ({
               {vendor.name}
             </span>
             <span className="text-[10px] text-[#64748b] truncate max-w-[220px]">
-              {vendor.sublabel}
+              {caseId ? `${caseId} · ${vendor.sublabel}` : vendor.sublabel}
             </span>
           </div>
         </div>

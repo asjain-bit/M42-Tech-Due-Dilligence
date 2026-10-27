@@ -24,11 +24,15 @@ import {
   Mail,
   FileText,
   MessageSquare,
+  XCircle,
+  AlertTriangle,
+  X,
 } from 'lucide-react'
 import { StatusChip } from '@/components/atoms/StatusChip'
 
 export interface AssessmentDetailData {
   id: string
+  caseId: string
   vendor: string
   questionnaire: string
   round: string
@@ -58,6 +62,17 @@ interface QuestionComment {
   date: string
 }
 
+const DEFAULT_MEETING_RECIPIENTS = ['zaid.alali@m42.ae', 'audit@facility.ae', 'sam.ai@m42.ae']
+const MAX_MEETING_RECIPIENTS = 5
+
+// Converts a 24h "HH:MM" time input value into "hh:mm AM/PM"
+const formatTimeInput = (value: string) => {
+  const [h, m] = value.split(':').map(Number)
+  const period = h >= 12 ? 'PM' : 'AM'
+  const hour12 = h % 12 === 0 ? 12 : h % 12
+  return `${String(hour12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${period}`
+}
+
 const REVIEWER_NAMES = [
   'Sarah Al Nuaimi',
   'Dr. Tariq Al Mansoori',
@@ -70,7 +85,7 @@ const REVIEWER_NAMES = [
 interface AuditTrailEvent {
   id: string
   title: string
-  category: 'System' | 'Admin' | 'AI Agent' | 'Vendor'
+  category: 'System' | 'Admin' | 'AI Agent' | 'Vendor' | 'Reviewer'
   timestamp: string
   actor: string
   details: string
@@ -170,6 +185,85 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
 
   const isScheduled = currentStatus === 'scheduled'
 
+  // Scheduled meeting management (cancel / reschedule)
+  const [meetingDateTime, setMeetingDateTime] = useState(assessment.createdDate)
+  const [meetingCancelled, setMeetingCancelled] = useState(false)
+  const [cancelReasonSaved, setCancelReasonSaved] = useState('')
+  const [showCancelModal, setShowCancelModal] = useState(false)
+  const [cancelReason, setCancelReason] = useState('')
+  const [showRescheduleModal, setShowRescheduleModal] = useState(false)
+  const [rescheduleDate, setRescheduleDate] = useState('')
+  const [rescheduleStart, setRescheduleStart] = useState('')
+  const [rescheduleEnd, setRescheduleEnd] = useState('')
+  const [rescheduleRecipients, setRescheduleRecipients] = useState<string[]>(
+    DEFAULT_MEETING_RECIPIENTS
+  )
+  const [recipientInput, setRecipientInput] = useState('')
+  const [recipientError, setRecipientError] = useState<string | null>(null)
+  const [rescheduleReason, setRescheduleReason] = useState('')
+
+  const isRescheduleTimeValid =
+    Boolean(rescheduleStart && rescheduleEnd) && rescheduleEnd > rescheduleStart
+  const isRescheduleValid =
+    Boolean(rescheduleDate) && isRescheduleTimeValid && rescheduleRecipients.length > 0
+
+  const showTimedToast = (message: string) => {
+    setToastMessage(message)
+    setTimeout(() => setToastMessage(null), 3000)
+  }
+
+  const handleConfirmCancel = () => {
+    setMeetingCancelled(true)
+    setCancelReasonSaved(cancelReason.trim())
+    setShowCancelModal(false)
+    setCancelReason('')
+    showTimedToast('Meeting cancelled successfully')
+  }
+
+  const openRescheduleModal = () => {
+    setRescheduleDate('')
+    setRescheduleStart('')
+    setRescheduleEnd('')
+    setRescheduleRecipients(DEFAULT_MEETING_RECIPIENTS)
+    setRecipientInput('')
+    setRecipientError(null)
+    setRescheduleReason('')
+    setShowRescheduleModal(true)
+  }
+
+  const handleAddRecipient = () => {
+    const email = recipientInput.trim()
+    if (!email) return
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setRecipientError('Please enter a valid email address.')
+      return
+    }
+    if (rescheduleRecipients.includes(email)) {
+      setRecipientError('This recipient has already been added.')
+      return
+    }
+    if (rescheduleRecipients.length >= MAX_MEETING_RECIPIENTS) {
+      setRecipientError(`Maximum ${MAX_MEETING_RECIPIENTS} recipients can be added.`)
+      return
+    }
+    setRescheduleRecipients((prev) => [...prev, email])
+    setRecipientInput('')
+    setRecipientError(null)
+  }
+
+  const handleConfirmReschedule = () => {
+    if (!isRescheduleValid) return
+    const formattedDate = new Date(`${rescheduleDate}T00:00:00`).toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    })
+    const newDateTime = `${formattedDate}, ${formatTimeInput(rescheduleStart)} - ${formatTimeInput(rescheduleEnd)}`
+    setMeetingDateTime(newDateTime)
+    setShowRescheduleModal(false)
+    showTimedToast(`Meeting rescheduled to ${newDateTime}`)
+  }
+
   // Dynamic status list based on questionnaire progress and current status
   const lifecycleSteps = [
     { title: 'Call dispatched', actor: 'Admin User', time: '1 Sept, 10:30 AM', status: 'DONE' },
@@ -230,8 +324,22 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
     },
   ]
 
+  // Reviewer comments are logged in the audit trail with reviewer name and time
+  const reviewerCommentEvents: AuditTrailEvent[] = Object.entries(questionComments).map(
+    ([questionId, comment]) => ({
+      id: `aud-${comment.id}`,
+      title: `Reviewer Comment Added (Question ${questionId})`,
+      category: 'Reviewer',
+      timestamp: comment.date,
+      actor: comment.reviewer,
+      details: comment.text,
+      icon: MessageSquare,
+    })
+  )
+
   // Requirement 2: Audit Trail Timeline Data
   const auditEvents: AuditTrailEvent[] = [
+    ...reviewerCommentEvents,
     {
       id: 'aud-8',
       title: 'Assessment Finalized & Status Updated',
@@ -527,6 +635,204 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
           <span>{toastMessage}</span>
         </div>
       )}{' '}
+      {/* Cancel Meeting Modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 z-50 bg-[#0d212c]/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="relative bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl border border-[#e2e8f0] flex flex-col gap-5 animate-in fade-in zoom-in-95 duration-150">
+            <button
+              onClick={() => setShowCancelModal(false)}
+              className="absolute top-5 right-5 p-1 rounded-lg text-slate-400 hover:text-[#0d212c] transition cursor-pointer"
+              aria-label="Close"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div className="flex flex-col items-center text-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-[#fef2f2] border border-[#fecaca] flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6 text-[#dc2626]" />
+              </div>
+              <h3 className="text-lg font-extrabold text-[#0d212c]">Cancel meeting</h3>
+              <p className="text-xs text-[#64748b]">Are you sure you want to cancel the meeting?</p>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="cancel-reason" className="text-xs font-bold text-[#0d212c]">
+                Reason
+              </label>
+              <textarea
+                id="cancel-reason"
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                rows={4}
+                placeholder="Describe the reason for cancelling this meeting (optional)..."
+                className="w-full px-4 py-3 rounded-xl border border-[#cbd5e1] text-xs font-medium text-[#0d212c] outline-none focus:border-[#94a3b8] bg-white resize-none"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setShowCancelModal(false)}
+                className="py-3 rounded-xl border border-[#e2e8f0] bg-white text-xs font-bold text-[#0d212c] hover:bg-slate-50 transition cursor-pointer"
+              >
+                Keep Assessment
+              </button>
+              <button
+                onClick={handleConfirmCancel}
+                className="py-3 rounded-xl bg-[#dc2626] hover:bg-[#b91c1c] text-white text-xs font-bold transition cursor-pointer border-0"
+              >
+                Confirm Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Reschedule Meeting Modal */}
+      {showRescheduleModal && (
+        <div className="fixed inset-0 z-50 bg-[#0d212c]/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="relative bg-white rounded-3xl max-w-lg w-full p-7 shadow-2xl border border-[#e2e8f0] flex flex-col gap-4 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-150">
+            <button
+              onClick={() => setShowRescheduleModal(false)}
+              className="absolute top-5 right-5 p-1 rounded-lg text-slate-400 hover:text-[#0d212c] transition cursor-pointer"
+              aria-label="Close"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#ddf7f9] border border-[#36c0c9]/30 flex items-center justify-center">
+                <Calendar className="w-5 h-5 text-[#0d7280]" />
+              </div>
+              <h3 className="text-lg font-extrabold text-[#0d212c]">Reschedule meeting</h3>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="reschedule-date" className="text-xs font-bold text-[#0d212c]">
+                New date <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="reschedule-date"
+                type="date"
+                value={rescheduleDate}
+                min={new Date().toISOString().split('T')[0]}
+                onChange={(e) => setRescheduleDate(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-[#cbd5e1] text-xs font-medium text-[#0d212c] outline-none focus:border-[#94a3b8] bg-white"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="reschedule-start" className="text-xs font-bold text-[#0d212c]">
+                  Start time <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="reschedule-start"
+                  type="time"
+                  value={rescheduleStart}
+                  onChange={(e) => setRescheduleStart(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#cbd5e1] text-xs font-medium text-[#0d212c] outline-none focus:border-[#94a3b8] bg-white"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="reschedule-end" className="text-xs font-bold text-[#0d212c]">
+                  End time <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="reschedule-end"
+                  type="time"
+                  value={rescheduleEnd}
+                  onChange={(e) => setRescheduleEnd(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#cbd5e1] text-xs font-medium text-[#0d212c] outline-none focus:border-[#94a3b8] bg-white"
+                />
+              </div>
+            </div>
+            {rescheduleStart && rescheduleEnd && !isRescheduleTimeValid && (
+              <p className="text-[11px] text-red-500 font-medium -mt-2">
+                End time must be after start time.
+              </p>
+            )}
+
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="reschedule-recipients" className="text-xs font-bold text-[#0d212c]">
+                Recipients <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="reschedule-recipients"
+                type="email"
+                value={recipientInput}
+                disabled={rescheduleRecipients.length >= MAX_MEETING_RECIPIENTS}
+                onChange={(e) => {
+                  setRecipientInput(e.target.value)
+                  setRecipientError(null)
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    handleAddRecipient()
+                  }
+                }}
+                placeholder="Enter email and press Enter..."
+                className="w-full px-4 py-2.5 rounded-xl border border-[#cbd5e1] text-xs font-medium text-[#0d212c] outline-none focus:border-[#94a3b8] bg-white disabled:bg-slate-50 disabled:cursor-not-allowed"
+              />
+              <div className="flex items-center justify-between text-[11px] text-[#64748b]">
+                <span>Maximum {MAX_MEETING_RECIPIENTS} recipients can be added</span>
+                <span>
+                  {rescheduleRecipients.length}/{MAX_MEETING_RECIPIENTS}
+                </span>
+              </div>
+              {recipientError && (
+                <p className="text-[11px] text-red-500 font-medium">{recipientError}</p>
+              )}
+              {rescheduleRecipients.length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {rescheduleRecipients.map((email) => (
+                    <span
+                      key={email}
+                      className="inline-flex items-center gap-1.5 bg-[#f1f5f9] border border-[#e2e8f0] text-[#0d212c] text-xs font-semibold px-3 py-1 rounded-full"
+                    >
+                      {email}
+                      <button
+                        onClick={() =>
+                          setRescheduleRecipients((prev) => prev.filter((r) => r !== email))
+                        }
+                        className="text-slate-400 hover:text-[#0d212c] transition cursor-pointer"
+                        aria-label={`Remove ${email}`}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="reschedule-reason" className="text-xs font-bold text-[#0d212c]">
+                Reason
+              </label>
+              <input
+                id="reschedule-reason"
+                type="text"
+                value={rescheduleReason}
+                onChange={(e) => setRescheduleReason(e.target.value)}
+                placeholder="e.g. Schedule conflict requested by facility (optional)"
+                className="w-full px-4 py-2.5 rounded-xl border border-[#cbd5e1] text-xs font-medium text-[#0d212c] outline-none focus:border-[#94a3b8] bg-white"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-4 border-t border-[#e2e8f0]">
+              <button
+                onClick={() => setShowRescheduleModal(false)}
+                className="py-3 rounded-xl border border-[#e2e8f0] bg-white text-xs font-bold text-[#0d212c] hover:bg-slate-50 transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmReschedule}
+                disabled={!isRescheduleValid}
+                className="py-3 rounded-xl bg-[#36c0c9] hover:bg-[#2badb6] text-white text-xs font-bold transition cursor-pointer border-0 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Confirm Reschedule
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Breadcrumb Menu (Moved outside of Header Card) */}
       <div className="w-full px-6 lg:px-10 pt-4 pb-1 text-xs font-medium flex items-center gap-1.5 text-[#64748b]">
         <button onClick={onBack} className="hover:text-[#0d7280] cursor-pointer">
@@ -545,6 +851,9 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
           <div className="flex flex-col gap-3">
             {/* Main Title & Subtitle */}
             <div className="flex flex-col gap-1">
+              <span className="text-[11px] font-bold text-[#64748b] uppercase tracking-wider">
+                Case ID: <span className="text-[#0d212c]">{assessment.caseId}</span>
+              </span>
               <h1 className="text-2xl font-extrabold tracking-tight text-[#0d212c]">
                 {assessment.vendor}
               </h1>
@@ -704,7 +1013,7 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
                   </p>
                 </div>
                 <span className="text-xs font-semibold text-[#0f766e] bg-[#ddf7f9] px-3 py-1 rounded-full">
-                  8 events logged
+                  {auditEvents.length} events logged
                 </span>
               </div>
 
@@ -785,6 +1094,51 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
           )
         ) : (
           <>
+            {/* Meeting summary: cancel / reschedule for scheduled assessments */}
+            {isScheduled && (
+              <div className="flex flex-col gap-2">
+                <h3 className="text-sm font-bold text-[#0d212c]">Meeting summary</h3>
+                <div className="bg-white p-5 rounded-2xl border border-[#e2e8f0] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs font-bold text-[#0d212c]">
+                      {meetingCancelled ? 'Meeting Cancelled' : 'Scheduled Session Details'}
+                    </span>
+                    <span className="text-xs text-[#64748b]">
+                      Scheduled Date &amp; Time:{' '}
+                      <strong
+                        className={`font-bold ${meetingCancelled ? 'text-[#64748b] line-through' : 'text-[#0d212c]'}`}
+                      >
+                        {meetingDateTime}
+                      </strong>
+                    </span>
+                    {meetingCancelled && cancelReasonSaved && (
+                      <span className="text-xs text-[#64748b]">
+                        Reason: <span className="text-[#0d212c]">{cancelReasonSaved}</span>
+                      </span>
+                    )}
+                  </div>
+                  {!meetingCancelled && (
+                    <div className="flex items-center gap-6 shrink-0">
+                      <button
+                        onClick={() => setShowCancelModal(true)}
+                        className="flex items-center gap-1.5 text-xs font-bold text-[#e11d48] hover:text-[#be123c] transition cursor-pointer bg-transparent border-0"
+                      >
+                        <XCircle className="w-4 h-4" />
+                        <span>Cancel meeting</span>
+                      </button>
+                      <button
+                        onClick={openRescheduleModal}
+                        className="flex items-center gap-1.5 text-xs font-bold text-[#36c0c9] hover:text-[#2badb6] transition cursor-pointer bg-transparent border-0"
+                      >
+                        <Calendar className="w-4 h-4" />
+                        <span>Reschedule meeting</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Section 1: Assessment lifecycle (Previous Card Theme with horizontal scroll for all 9 steps) */}
             <div className="flex flex-col gap-2">
               <h3 className="text-sm font-bold text-[#0d212c]">Assessment lifecycle</h3>

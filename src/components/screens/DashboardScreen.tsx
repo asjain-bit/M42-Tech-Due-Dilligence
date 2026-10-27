@@ -8,6 +8,7 @@ import { AssessmentDetailScreen, AssessmentDetailData } from './AssessmentDetail
 
 interface AssessmentRow {
   id: string
+  caseId: string
   vendor: string
   questionnaire: string
   round: string
@@ -29,6 +30,7 @@ export const DashboardScreen: React.FC = () => {
   const [assessments, setAssessments] = useState<AssessmentRow[]>([
     {
       id: 'ast-1',
+      caseId: 'PR-126',
       vendor: 'Presight AI | See the Future Today',
       questionnaire: 'Technical Questionnaire',
       round: 'Round 1',
@@ -38,6 +40,7 @@ export const DashboardScreen: React.FC = () => {
     },
     {
       id: 'ast-2',
+      caseId: 'PR-125',
       vendor: 'Directus Inc.',
       questionnaire: 'Data Protection & Privacy',
       round: 'Round 2',
@@ -47,6 +50,7 @@ export const DashboardScreen: React.FC = () => {
     },
     {
       id: 'ast-3',
+      caseId: 'PR-124',
       vendor: 'Pango Group LLC',
       questionnaire: 'Information Security & Compliance',
       round: 'Initial Review',
@@ -56,6 +60,7 @@ export const DashboardScreen: React.FC = () => {
     },
     {
       id: 'ast-4',
+      caseId: 'PR-123',
       vendor: 'Apex Systems Advisory',
       questionnaire: 'Technical Questionnaire',
       round: 'Stage 2 Audit',
@@ -65,6 +70,7 @@ export const DashboardScreen: React.FC = () => {
     },
     {
       id: 'ast-5',
+      caseId: 'PR-122',
       vendor: 'Delphi AI Technologies',
       questionnaire: 'SOC 2 Type II Vendor Risk Assessment',
       round: 'Round 1 - Technical',
@@ -74,6 +80,7 @@ export const DashboardScreen: React.FC = () => {
     },
     {
       id: 'ast-6',
+      caseId: 'PR-121',
       vendor: 'BioHealth Analytics',
       questionnaire: 'HIPAA & Healthcare Data Compliance',
       round: 'Follow-up Audit',
@@ -83,6 +90,7 @@ export const DashboardScreen: React.FC = () => {
     },
     {
       id: 'ast-7',
+      caseId: 'PR-120',
       vendor: 'CloudScale AI Systems',
       questionnaire: 'Third-Party Software Supply Chain Security',
       round: 'Round 3',
@@ -92,6 +100,7 @@ export const DashboardScreen: React.FC = () => {
     },
     {
       id: 'ast-8',
+      caseId: 'PR-119',
       vendor: 'CyberGuard Solutions',
       questionnaire: 'ISO 27001 ISMS Security Checklist',
       round: 'Annual Re-evaluation',
@@ -101,6 +110,7 @@ export const DashboardScreen: React.FC = () => {
     },
     {
       id: 'ast-9',
+      caseId: 'PR-118',
       vendor: 'HealthCloud Telemetry',
       questionnaire: 'Cloud Infrastructure Audit Questionnaire',
       round: 'Stage 1 Discovery',
@@ -110,6 +120,7 @@ export const DashboardScreen: React.FC = () => {
     },
     {
       id: 'ast-10',
+      caseId: 'PR-117',
       vendor: 'PharmaTech Analytics',
       questionnaire: 'Clinical AI Safety & Ethics Questionnaire',
       round: 'Pre-onboarding',
@@ -119,6 +130,7 @@ export const DashboardScreen: React.FC = () => {
     },
     {
       id: 'ast-11',
+      caseId: 'PR-116',
       vendor: 'MedSec Audit Co',
       questionnaire: 'UAE DOH Health Data Residency Compliance',
       round: 'Round 2 - Compliance',
@@ -128,6 +140,7 @@ export const DashboardScreen: React.FC = () => {
     },
     {
       id: 'ast-12',
+      caseId: 'PR-115',
       vendor: 'Global Diagnostics IT',
       questionnaire: 'Business Continuity & Disaster Recovery Audit',
       round: 'Final Review',
@@ -173,6 +186,7 @@ export const DashboardScreen: React.FC = () => {
     return assessments.filter((item) => {
       const matchesStatus = selectedStatusFilter === 'all' || item.status === selectedStatusFilter
       const matchesSearch =
+        item.caseId.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.vendor.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.questionnaire.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.round.toLowerCase().includes(searchTerm.toLowerCase())
@@ -357,6 +371,7 @@ export const DashboardScreen: React.FC = () => {
           <table className="w-full text-left text-sm border-collapse">
             <thead>
               <tr className="bg-[#f8fafc] border-b border-[#e2e8f0] text-[#64748b] text-xs font-bold">
+                <th className="py-3.5 px-4 whitespace-nowrap">Case ID</th>
                 <th className="py-3.5 px-4">Vendor</th>
                 <th className="py-3.5 px-4">Questionnaire</th>
                 <th className="py-3.5 px-4">Round</th>
@@ -368,7 +383,7 @@ export const DashboardScreen: React.FC = () => {
             <tbody className="divide-y divide-[#e2e8f0]/60">
               {paginatedAssessments.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-[#64748b] text-sm">
+                  <td colSpan={7} className="py-8 text-center text-[#64748b] text-sm">
                     No assessments matching search criteria.
                   </td>
                 </tr>
@@ -385,6 +400,9 @@ export const DashboardScreen: React.FC = () => {
                     }
                     className="hover:bg-[#f8fafc] transition cursor-pointer group"
                   >
+                    <td className="py-3.5 px-4 font-bold text-xs text-[#0d212c] whitespace-nowrap">
+                      {row.caseId}
+                    </td>
                     <td
                       className="py-3.5 px-4 font-semibold text-xs text-[#0d212c] group-hover:text-[#36c0c9] truncate"
                       title={row.vendor}
