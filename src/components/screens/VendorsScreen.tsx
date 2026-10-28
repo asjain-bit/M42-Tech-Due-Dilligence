@@ -655,14 +655,6 @@ export const VendorsScreen: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3 w-full sm:w-auto">
-          <FilterMenu
-            fields={vendorFilterFields}
-            values={vendorFilters}
-            onChange={(values) => {
-              setVendorFilters(values)
-              setCurrentPage(1)
-            }}
-          />
           <div className="relative w-full sm:w-72">
             <Search className="w-4 h-4 text-[#64748b] absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
@@ -676,6 +668,15 @@ export const VendorsScreen: React.FC = () => {
               className="w-full pl-10 pr-4 py-2 rounded-xl border border-[#e2e8f0] bg-white text-xs font-medium text-[#0d212c] outline-none focus:border-[#cbd5e1] shadow-xs"
             />
           </div>
+
+          <FilterMenu
+            fields={vendorFilterFields}
+            values={vendorFilters}
+            onChange={(values) => {
+              setVendorFilters(values)
+              setCurrentPage(1)
+            }}
+          />
 
           <button
             onClick={() => {

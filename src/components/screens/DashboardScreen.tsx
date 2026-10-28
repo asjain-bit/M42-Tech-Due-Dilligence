@@ -484,6 +484,12 @@ export const DashboardScreen: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
         <h2 className="text-xl font-extrabold text-[#0d212c]">Assessments</h2>
         <div className="flex items-stretch gap-3 w-full sm:w-auto">
+          <div className="w-full sm:w-80 shrink-0">
+            <SearchBar
+              placeholder="Search vendor name, questionnaire..."
+              onSearch={handleSearchChange}
+            />
+          </div>
           <FilterMenu
             fields={assessmentFilterFields}
             values={assessmentFilters}
@@ -492,12 +498,6 @@ export const DashboardScreen: React.FC = () => {
               setCurrentPage(1)
             }}
           />
-          <div className="w-full sm:w-80 shrink-0">
-            <SearchBar
-              placeholder="Search vendor name, questionnaire..."
-              onSearch={handleSearchChange}
-            />
-          </div>
         </div>
       </div>
 
@@ -616,7 +616,7 @@ export const DashboardScreen: React.FC = () => {
                               aria-expanded={isExpanded}
                               aria-label={`${isExpanded ? 'Hide' : 'Show'} all rounds for ${row.caseId}`}
                               title={isExpanded ? 'Hide earlier rounds' : 'Show all rounds'}
-                              className={`w-7 h-7 rounded-lg border border-[#e2e8f0] bg-white text-[#64748b] hover:text-[#0d212c] hover:border-[#cbd5e1] inline-flex items-center justify-center transition cursor-pointer focus:opacity-100 ${
+                              className={`w-7 h-7 border-0 bg-transparent p-0 text-[#64748b] hover:text-[#0d212c] inline-flex items-center justify-center transition cursor-pointer focus:opacity-100 ${
                                 isExpanded ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                               }`}
                             >
@@ -641,10 +641,11 @@ export const DashboardScreen: React.FC = () => {
                             <td className="py-3 px-4 text-xs text-[#64748b] whitespace-nowrap">
                               {row.caseId}
                             </td>
-                            <td className="py-3 px-4 text-xs text-[#64748b]">
-                              <span className="pl-3 border-l-2 border-[#cbd5e1]">
-                                Earlier round
-                              </span>
+                            <td
+                              className="py-3 px-4 font-semibold text-xs text-[#0d212c] truncate"
+                              title={row.vendor}
+                            >
+                              {row.vendor}
                             </td>
                             <td
                               className="py-3 px-4 text-xs text-[#0d212c] truncate"
