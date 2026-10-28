@@ -1,8 +1,12 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useRef, useEffect } from 'react'
 import {
   Upload,
+  Plus,
+  Sparkles,
+  CheckCircle2,
+  Check,
   Trash2,
   FileText,
   X,
@@ -18,16 +22,251 @@ import {
 import { Input } from '@/components/atoms/Input'
 import { Textarea } from '@/components/atoms/Textarea'
 import { StatusChip } from '@/components/atoms/StatusChip'
-import { QuestionnaireDetailScreen, QuestionnaireDetailData } from './QuestionnaireDetailScreen'
+import {
+  QuestionnaireDetailScreen,
+  QuestionnaireDetailData,
+  QuestionItem,
+} from './QuestionnaireDetailScreen'
 
 interface Questionnaire {
   id: string
   title: string
   description: string
-  fileType: 'PDF' | 'DOCX' | 'MD'
+  fileType: 'PDF' | 'DOCX' | 'MD' | 'XLSX' | 'AI'
   questionsCount: number
   status: 'Ready' | 'Draft' | 'Processing'
+  questions?: QuestionItem[]
 }
+
+type QuestionDraft = Omit<QuestionItem, 'id'>
+
+// Question bank the mock AI generator draws from, grouped by focus area
+const AI_QUESTION_BANK: { area: string; keywords: string[]; questions: QuestionDraft[] }[] = [
+  {
+    area: 'Security',
+    keywords: ['security', 'cyber', 'risk', 'threat', 'vulnerab', 'penetration', 'access'],
+    questions: [
+      {
+        question: 'Describe how you encrypt customer data at rest and in transit.',
+        responseCue:
+          'Name the encryption standards (e.g. AES-256, TLS 1.2+) and explain key management and rotation.',
+        researchNeeded: false,
+        attachmentRequired: false,
+        requiredQuestion: true,
+      },
+      {
+        question:
+          'Describe your identity and access management controls, including SSO, MFA and least-privilege access.',
+        responseCue:
+          'State whether MFA is enforced for all users and admins, and how access reviews are performed.',
+        researchNeeded: false,
+        attachmentRequired: false,
+        requiredQuestion: true,
+      },
+      {
+        question: 'Provide your most recent penetration test summary and remediation status.',
+        responseCue:
+          'Include the test date, scope, testing firm, critical/high findings and their remediation timelines.',
+        researchNeeded: false,
+        attachmentRequired: true,
+        requiredQuestion: true,
+      },
+      {
+        question: 'How do you identify, prioritise and remediate vulnerabilities in the solution?',
+        responseCue:
+          'Describe scanning tools and frequency, severity SLAs, and how patches are deployed to production.',
+        researchNeeded: false,
+        attachmentRequired: false,
+        requiredQuestion: false,
+      },
+      {
+        question: 'Provide your current ISO/IEC 27001 certificate or SOC 2 Type II report.',
+        responseCue: 'Attach the certificate or report and state its validity period and scope.',
+        researchNeeded: true,
+        attachmentRequired: true,
+        requiredQuestion: true,
+      },
+    ],
+  },
+  {
+    area: 'Data privacy',
+    keywords: ['privacy', 'data protection', 'gdpr', 'personal', 'pii', 'phi', 'residency'],
+    questions: [
+      {
+        question: 'Where is customer data stored, and can data residency be restricted to the UAE?',
+        responseCue:
+          'List hosting regions and providers, and explain how residency restrictions are enforced.',
+        researchNeeded: true,
+        attachmentRequired: false,
+        requiredQuestion: true,
+      },
+      {
+        question: 'How do you handle data subject requests such as access, correction and erasure?',
+        responseCue:
+          'Describe the request workflow, response timelines and how completion is verified.',
+        researchNeeded: false,
+        attachmentRequired: false,
+        requiredQuestion: false,
+      },
+      {
+        question: 'Which sub-processors have access to customer data, and how are they assessed?',
+        responseCue:
+          'Provide the sub-processor list and describe due-diligence and contractual safeguards.',
+        researchNeeded: true,
+        attachmentRequired: true,
+        requiredQuestion: false,
+      },
+    ],
+  },
+  {
+    area: 'AI governance',
+    keywords: [' ai', 'ai ', 'model', 'machine learning', 'algorithm', 'llm'],
+    questions: [
+      {
+        question: 'How do you test AI models for bias, accuracy and performance drift?',
+        responseCue:
+          'Describe evaluation datasets, metrics, monitoring frequency and thresholds that trigger retraining.',
+        researchNeeded: false,
+        attachmentRequired: true,
+        requiredQuestion: true,
+      },
+      {
+        question: 'Is customer data used to train or fine-tune your AI models?',
+        responseCue:
+          'State whether customer data is used for training, how consent is obtained and how opt-out works.',
+        researchNeeded: false,
+        attachmentRequired: false,
+        requiredQuestion: true,
+      },
+      {
+        question: 'What human oversight exists for AI-generated outputs?',
+        responseCue:
+          'Explain review steps, escalation paths and how users can challenge or correct outputs.',
+        researchNeeded: false,
+        attachmentRequired: false,
+        requiredQuestion: false,
+      },
+    ],
+  },
+  {
+    area: 'Cloud infrastructure',
+    keywords: ['cloud', 'infrastructure', 'hosting', 'saas', 'aws', 'azure', 'tenant'],
+    questions: [
+      {
+        question: 'How is customer data isolated in your multi-tenant environment?',
+        responseCue:
+          'Describe logical or physical isolation controls and how tenant separation is tested.',
+        researchNeeded: false,
+        attachmentRequired: false,
+        requiredQuestion: true,
+      },
+      {
+        question: 'How are production infrastructure changes reviewed and approved?',
+        responseCue:
+          'Describe change management, infrastructure-as-code reviews and segregation of duties.',
+        researchNeeded: false,
+        attachmentRequired: false,
+        requiredQuestion: false,
+      },
+    ],
+  },
+  {
+    area: 'Clinical safety',
+    keywords: ['clinical', 'health', 'patient', 'medical', 'hipaa', 'doh'],
+    questions: [
+      {
+        question:
+          'Does the solution influence clinical decisions, and how is patient safety risk managed?',
+        responseCue:
+          'Provide the hazard log or clinical risk assessment and name the accountable clinical safety officer.',
+        researchNeeded: false,
+        attachmentRequired: true,
+        requiredQuestion: true,
+      },
+      {
+        question: 'Which healthcare regulations and DOH standards does the solution comply with?',
+        responseCue:
+          'List applicable regulations and attach evidence of compliance or certification.',
+        researchNeeded: true,
+        attachmentRequired: true,
+        requiredQuestion: false,
+      },
+    ],
+  },
+  {
+    area: 'Business continuity',
+    keywords: [
+      'continuity',
+      'disaster',
+      'recovery',
+      'resilience',
+      'backup',
+      'incident',
+      'availability',
+    ],
+    questions: [
+      {
+        question:
+          'Describe your incident-response process and the time to notify affected customers.',
+        responseCue:
+          'Provide the notification window (e.g. within 24 hours), triage workflow and post-incident review format.',
+        researchNeeded: false,
+        attachmentRequired: true,
+        requiredQuestion: true,
+      },
+      {
+        question: 'What are your RTO and RPO targets, and when were they last tested?',
+        responseCue:
+          'State the targets, the date and result of the last failover or recovery test.',
+        researchNeeded: false,
+        attachmentRequired: false,
+        requiredQuestion: false,
+      },
+    ],
+  },
+]
+
+const GENERAL_QUESTIONS: QuestionDraft[] = [
+  {
+    question:
+      'State the legal name, headquarters location and ownership structure of your organisation.',
+    responseCue: 'Include the registered entity, city and country, and any parent company.',
+    researchNeeded: true,
+    attachmentRequired: false,
+    requiredQuestion: true,
+  },
+  {
+    question: 'Describe the solution in scope and the services it provides to M42.',
+    responseCue: 'Summarise the main functions, deployment model and who will use it.',
+    researchNeeded: false,
+    attachmentRequired: false,
+    requiredQuestion: true,
+  },
+]
+
+const AI_QUESTION_TARGET = 10
+
+// Mock AI generation: picks focus areas from the title and instructions, then drafts questions
+const generateQuestionnaire = (title: string, instructions: string) => {
+  const text = ` ${title} ${instructions} `.toLowerCase()
+  const matched = AI_QUESTION_BANK.filter((group) => group.keywords.some((k) => text.includes(k)))
+  const focusAreas = matched.length > 0 ? matched : AI_QUESTION_BANK.slice(0, 2)
+  const fallbackAreas = AI_QUESTION_BANK.filter((group) => !focusAreas.includes(group))
+
+  const drafts: QuestionDraft[] = [...GENERAL_QUESTIONS]
+  for (const group of [...focusAreas, ...fallbackAreas]) {
+    for (const question of group.questions) {
+      if (drafts.length >= AI_QUESTION_TARGET) break
+      drafts.push(question)
+    }
+  }
+  return {
+    areas: focusAreas.map((group) => group.area),
+    questions: drafts.map((draft, idx) => ({ id: idx + 1, ...draft })),
+  }
+}
+
+const AI_THINKING_STEP_MS = 1200
 
 export const QuestionnairesScreen: React.FC = () => {
   const [selectedQuestionnaire, setSelectedQuestionnaire] =
@@ -156,6 +395,25 @@ export const QuestionnairesScreen: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false)
   const [newQuestionnaireTitle, setNewQuestionnaireTitle] = useState('')
   const [deletingId, setDeletingId] = useState<string | null>(null)
+
+  // Add questionnaire: choose between uploading a document or generating with AI
+  const [showAddOptions, setShowAddOptions] = useState(false)
+  const [showAiModal, setShowAiModal] = useState(false)
+  const [aiTitle, setAiTitle] = useState('')
+  const [aiInstructions, setAiInstructions] = useState('')
+  const [aiStage, setAiStage] = useState<'form' | 'thinking' | 'done'>('form')
+  const [aiStepsDone, setAiStepsDone] = useState(0)
+  const [aiResult, setAiResult] = useState<{
+    questionnaire: Questionnaire
+    areas: string[]
+  } | null>(null)
+  const aiTimers = useRef<ReturnType<typeof setTimeout>[]>([])
+
+  const clearAiTimers = () => {
+    aiTimers.current.forEach(clearTimeout)
+    aiTimers.current = []
+  }
+  useEffect(() => clearAiTimers, [])
   const [toastMessage, setToastMessage] = useState<string | null>(null)
 
   // Filtered Questionnaires (Search & Status Filter)
@@ -202,7 +460,10 @@ export const QuestionnairesScreen: React.FC = () => {
     setNewQuestionnaireTitle(title.trim())
 
     setTimeout(() => {
-      const extension = uploadedFile.name.split('.').pop()?.toUpperCase() as 'PDF' | 'DOCX' | 'MD'
+      const rawExtension = uploadedFile.name.split('.').pop()?.toUpperCase()
+      const extension = (
+        rawExtension === 'XLS' ? 'XLSX' : rawExtension
+      ) as Questionnaire['fileType']
       const newQuestionnaire: Questionnaire = {
         id: `q-${Date.now()}`,
         title,
@@ -222,6 +483,76 @@ export const QuestionnairesScreen: React.FC = () => {
       setNewQuestionnaireTitle('')
       showToast(`Questionnaire "${newQuestionnaire.title}" successfully uploaded & structured!`)
     }, 1500)
+  }
+
+  const openAiModal = () => {
+    clearAiTimers()
+    setAiTitle('')
+    setAiInstructions('')
+    setAiStage('form')
+    setAiStepsDone(0)
+    setAiResult(null)
+    setShowAddOptions(false)
+    setShowAiModal(true)
+  }
+
+  const closeAiModal = () => {
+    clearAiTimers()
+    setShowAiModal(false)
+  }
+
+  const aiPlan = generateQuestionnaire(aiTitle, aiInstructions)
+  const aiThinkingSteps = [
+    'Reading the questionnaire title and instructions',
+    `Identifying focus areas: ${aiPlan.areas.join(', ')}`,
+    `Drafting ${aiPlan.questions.length} questions`,
+    'Writing response cues and evidence requirements',
+    'Reviewing coverage and marking required questions',
+  ]
+
+  const handleGenerate = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!aiTitle.trim() || !aiInstructions.trim()) return
+    clearAiTimers()
+    setAiStage('thinking')
+    setAiStepsDone(0)
+
+    aiThinkingSteps.forEach((_, idx) => {
+      aiTimers.current.push(
+        setTimeout(() => setAiStepsDone(idx + 1), (idx + 1) * AI_THINKING_STEP_MS)
+      )
+    })
+    aiTimers.current.push(
+      setTimeout(
+        () => {
+          const generated = generateQuestionnaire(aiTitle, aiInstructions)
+          const newQuestionnaire: Questionnaire = {
+            id: `q-${Date.now()}`,
+            title: aiTitle.trim(),
+            description: aiInstructions.trim(),
+            fileType: 'AI',
+            questionsCount: generated.questions.length,
+            status: 'Draft',
+            questions: generated.questions,
+          }
+          setQuestionnaires((prev) => [newQuestionnaire, ...prev])
+          setAiResult({ questionnaire: newQuestionnaire, areas: generated.areas })
+          setAiStage('done')
+        },
+        (aiThinkingSteps.length + 1) * AI_THINKING_STEP_MS
+      )
+    )
+  }
+
+  const openQuestionnaire = (item: Questionnaire, initialEditMode: boolean) => {
+    setSelectedQuestionnaire({
+      id: item.id,
+      title: item.title,
+      status: item.status,
+      questionsCount: item.questionsCount,
+      initialEditMode,
+      initialQuestions: item.questions,
+    })
   }
 
   const handleDelete = () => {
@@ -268,7 +599,7 @@ export const QuestionnairesScreen: React.FC = () => {
         <span className="text-[#36c0c9] font-bold">Questionnaires</span>
       </div>
 
-      {/* Header Bar with Search Bar placed on the LEFT side of Upload questionnaire CTA */}
+      {/* Header Bar with Search Bar placed on the LEFT side of Add questionnaire CTA */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex flex-col gap-0.5">
           <h2 className="text-xl font-extrabold text-[#0d212c]">Questionnaires</h2>
@@ -290,11 +621,11 @@ export const QuestionnairesScreen: React.FC = () => {
           </div>
 
           <button
-            onClick={() => setShowUploadModal(true)}
+            onClick={() => setShowAddOptions(true)}
             className="bg-[#0d212c] hover:bg-[#122e3d] text-white font-bold py-2.5 px-5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-xs transition cursor-pointer border-0 shrink-0"
           >
-            <Upload className="w-4 h-4 text-white" />
-            <span>Upload questionnaire</span>
+            <Plus className="w-4 h-4 text-white" />
+            <span>Add questionnaire</span>
           </button>
         </div>
       </div>
@@ -392,15 +723,7 @@ export const QuestionnairesScreen: React.FC = () => {
               {paginatedQuestionnaires.map((item) => (
                 <tr
                   key={item.id}
-                  onClick={() =>
-                    setSelectedQuestionnaire({
-                      id: item.id,
-                      title: item.title,
-                      status: item.status,
-                      questionsCount: item.questionsCount,
-                      initialEditMode: false,
-                    })
-                  }
+                  onClick={() => openQuestionnaire(item, false)}
                   className="hover:bg-[#f8fafc] transition cursor-pointer group"
                 >
                   <td
@@ -435,15 +758,7 @@ export const QuestionnairesScreen: React.FC = () => {
                       onClick={(e) => e.stopPropagation()}
                     >
                       <button
-                        onClick={() =>
-                          setSelectedQuestionnaire({
-                            id: item.id,
-                            title: item.title,
-                            status: item.status,
-                            questionsCount: item.questionsCount,
-                            initialEditMode: true,
-                          })
-                        }
+                        onClick={() => openQuestionnaire(item, true)}
                         className="p-1.5 text-[#64748b] hover:text-[#0d212c] hover:bg-slate-100 rounded-lg transition cursor-pointer"
                         title="Edit questionnaire"
                         aria-label="Edit questionnaire"
@@ -515,6 +830,283 @@ export const QuestionnairesScreen: React.FC = () => {
         )}
       </div>
 
+      {/* Add Questionnaire: choose upload or AI generation */}
+      {showAddOptions && (
+        <div className="fixed inset-0 z-50 bg-[#0d212c]/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-8 shadow-2xl border border-[#e2e8f0] animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-[#e2e8f0] pb-4 mb-6">
+              <div>
+                <h3 className="text-lg font-extrabold text-[#0d212c]">Add questionnaire</h3>
+                <p className="text-xs text-[#64748b] mt-0.5 font-medium">
+                  Choose how you want to create the questionnaire.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddOptions(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-[#0d212c] transition cursor-pointer"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <button
+                onClick={() => {
+                  setShowAddOptions(false)
+                  setShowUploadModal(true)
+                }}
+                className="text-left p-6 rounded-2xl border border-[#e2e8f0] hover:border-[#36c0c9] hover:bg-[#ddf7f9]/20 bg-white transition cursor-pointer flex flex-col gap-3"
+              >
+                <div className="w-11 h-11 rounded-xl bg-[#f1f5f9] flex items-center justify-center">
+                  <Upload className="w-5 h-5 text-[#0d212c]" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-sm font-extrabold text-[#0d212c]">
+                    Upload questionnaire
+                  </span>
+                  <span className="text-xs text-[#64748b] leading-relaxed">
+                    Upload a questionnaire document (PDF, DOCX, MD or Excel) based on the
+                    questionnaire template.
+                  </span>
+                </div>
+              </button>
+
+              <button
+                onClick={openAiModal}
+                className="text-left p-6 rounded-2xl border border-[#e2e8f0] hover:border-[#36c0c9] hover:bg-[#ddf7f9]/20 bg-white transition cursor-pointer flex flex-col gap-3"
+              >
+                <div className="w-11 h-11 rounded-xl bg-[#ddf7f9] flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-[#0d7280]" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-sm font-extrabold text-[#0d212c]">Generate with AI</span>
+                  <span className="text-xs text-[#64748b] leading-relaxed">
+                    Give a title and instructions, and AI will draft the questions for you to
+                    review.
+                  </span>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Generate Questionnaire with AI */}
+      {showAiModal && (
+        <div className="fixed inset-0 z-50 bg-[#0d212c]/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-8 shadow-2xl border border-[#e2e8f0] animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-[#e2e8f0] pb-4 mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#ddf7f9] flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-[#0d7280]" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-extrabold text-[#0d212c]">
+                    Generate questionnaire with AI
+                  </h3>
+                  <p className="text-xs text-[#64748b] mt-0.5 font-medium">
+                    {aiStage === 'form'
+                      ? 'Describe the questionnaire you need. You can review and edit the questions afterwards.'
+                      : aiStage === 'thinking'
+                        ? 'AI is drafting your questionnaire...'
+                        : 'Your questionnaire is ready to review.'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={closeAiModal}
+                className="p-1 rounded-lg text-slate-400 hover:text-[#0d212c] transition cursor-pointer"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {aiStage === 'form' && (
+              <form onSubmit={handleGenerate} className="flex flex-col gap-5">
+                <div>
+                  <label
+                    htmlFor="ai-questionnaire-title"
+                    className="block text-xs font-bold text-[#0d212c] mb-2"
+                  >
+                    Questionnaire title <span className="text-red-500 font-bold">*</span>
+                  </label>
+                  <Input
+                    id="ai-questionnaire-title"
+                    placeholder="e.g. Security Risk Assessment"
+                    value={aiTitle}
+                    onChange={(e) => setAiTitle(e.target.value)}
+                    required
+                    className="w-full text-xs py-3"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="ai-questionnaire-instructions"
+                    className="block text-xs font-bold text-[#0d212c] mb-2"
+                  >
+                    Instructions <span className="text-red-500 font-bold">*</span>
+                  </label>
+                  <Textarea
+                    id="ai-questionnaire-instructions"
+                    placeholder="e.g. Generate questions for a security risk assessment of a cloud-hosted solution that processes patient data."
+                    value={aiInstructions}
+                    onChange={(e) => setAiInstructions(e.target.value)}
+                    rows={5}
+                    required
+                    className="w-full text-xs"
+                  />
+                  <p className="text-[11px] text-[#64748b] mt-1.5">
+                    Mention the solution, risk areas and any regulations the questions should cover.
+                  </p>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t border-[#e2e8f0]">
+                  <button
+                    type="button"
+                    onClick={closeAiModal}
+                    className="px-5 py-2.5 rounded-xl border border-[#e2e8f0] text-xs font-semibold text-[#0d212c] hover:bg-slate-50 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!aiTitle.trim() || !aiInstructions.trim()}
+                    className="bg-[#0d212c] hover:bg-[#122e3d] text-white font-bold py-2.5 px-7 rounded-xl text-xs flex items-center justify-center gap-2 shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition border-0"
+                  >
+                    <Sparkles className="w-4 h-4 text-white" />
+                    <span>Generate questionnaire</span>
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {aiStage === 'thinking' && (
+              <div className="flex flex-col gap-5">
+                <div className="p-5 rounded-2xl bg-[#f8fafc] border border-[#e2e8f0] flex flex-col gap-4">
+                  <div className="flex items-center gap-2 text-xs font-bold text-[#0d7280]">
+                    <Sparkles className="w-4 h-4 animate-pulse" />
+                    <span>Thinking...</span>
+                  </div>
+                  <ol className="flex flex-col gap-3">
+                    {aiThinkingSteps.map((step, idx) => {
+                      const isDone = idx < aiStepsDone
+                      const isActive = idx === aiStepsDone
+                      return (
+                        <li key={step} className="flex items-center gap-3 text-xs">
+                          <span className="w-5 h-5 shrink-0 flex items-center justify-center">
+                            {isDone ? (
+                              <span className="w-5 h-5 rounded-full bg-[#36c0c9] flex items-center justify-center">
+                                <Check className="w-3 h-3 text-white stroke-[3]" />
+                              </span>
+                            ) : isActive ? (
+                              <Loader2 className="w-4 h-4 animate-spin text-[#36c0c9]" />
+                            ) : (
+                              <span className="w-2 h-2 rounded-full bg-[#cbd5e1]" />
+                            )}
+                          </span>
+                          <span
+                            className={
+                              isDone
+                                ? 'text-[#0d212c] font-medium'
+                                : isActive
+                                  ? 'text-[#0d212c] font-bold'
+                                  : 'text-[#94a3b8]'
+                            }
+                          >
+                            {step}
+                          </span>
+                        </li>
+                      )
+                    })}
+                  </ol>
+                  <div className="h-1.5 w-full bg-[#e2e8f0] rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-[#36c0c9] transition-all duration-700"
+                      style={{ width: `${(aiStepsDone / aiThinkingSteps.length) * 100}%` }}
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end pt-4 border-t border-[#e2e8f0]">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      clearAiTimers()
+                      setAiStage('form')
+                      setAiStepsDone(0)
+                    }}
+                    className="px-5 py-2.5 rounded-xl border border-[#e2e8f0] text-xs font-semibold text-[#0d212c] hover:bg-slate-50 cursor-pointer"
+                  >
+                    Stop generating
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {aiStage === 'done' && aiResult && (
+              <div className="flex flex-col gap-5">
+                <div className="flex items-start gap-3 p-4 rounded-2xl bg-[#f0fdf4] border border-[#bbf7d0]">
+                  <CheckCircle2 className="w-5 h-5 text-[#16a34a] shrink-0 mt-0.5" />
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-sm font-extrabold text-[#0d212c]">
+                      {aiResult.questionnaire.questionsCount} questions generated
+                    </span>
+                    <span className="text-xs text-[#64748b]">
+                      &ldquo;{aiResult.questionnaire.title}&rdquo; covers{' '}
+                      {aiResult.areas.join(', ')}. It has been added to your questionnaires as a
+                      Draft.
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <span className="text-[11px] font-extrabold text-[#64748b] uppercase tracking-wider">
+                    Preview
+                  </span>
+                  <ol className="flex flex-col divide-y divide-[#e2e8f0] border border-[#e2e8f0] rounded-2xl">
+                    {aiResult.questionnaire.questions?.slice(0, 4).map((q) => (
+                      <li key={q.id} className="px-4 py-3 text-xs text-[#0d212c] flex gap-2">
+                        <span className="font-bold text-[#64748b]">{q.id}.</span>
+                        <span>{q.question}</span>
+                      </li>
+                    ))}
+                  </ol>
+                  {aiResult.questionnaire.questionsCount > 4 && (
+                    <span className="text-[11px] text-[#64748b]">
+                      + {aiResult.questionnaire.questionsCount - 4} more questions
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t border-[#e2e8f0]">
+                  <button
+                    type="button"
+                    onClick={closeAiModal}
+                    className="px-5 py-2.5 rounded-xl border border-[#e2e8f0] text-xs font-semibold text-[#0d212c] hover:bg-slate-50 cursor-pointer"
+                  >
+                    Close
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closeAiModal()
+                      openQuestionnaire(aiResult.questionnaire, true)
+                    }}
+                    className="bg-[#0d212c] hover:bg-[#122e3d] text-white font-bold py-2.5 px-7 rounded-xl text-xs shadow-xs cursor-pointer transition border-0"
+                  >
+                    Review questions
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Upload Questionnaire Popup Modal (Requirement 2: Width increased to max-w-3xl) */}
       {showUploadModal && (
         <div className="fixed inset-0 z-50 bg-[#0d212c]/40 backdrop-blur-xs flex items-center justify-center p-4">
@@ -565,7 +1157,7 @@ export const QuestionnairesScreen: React.FC = () => {
               <div>
                 <div className="flex items-center gap-1.5 mb-2">
                   <label className="block text-xs font-bold text-[#0d212c]">
-                    Document upload (PDF, DOCX, MD - Max 1 file, up to 20 MB){' '}
+                    Document upload (PDF, DOCX, MD, Excel - Max 1 file, up to 20 MB){' '}
                     <span className="text-red-500 font-bold">*</span>
                   </label>
                   <div className="relative group cursor-pointer">
@@ -584,11 +1176,11 @@ export const QuestionnairesScreen: React.FC = () => {
                       Click to choose file or drag and drop
                     </span>
                     <span className="text-[11px] text-[#64748b]">
-                      Supported formats: PDF, DOCX, MD (Maximum file size: 20 MB)
+                      Supported formats: PDF, DOCX, MD, XLSX, XLS (Maximum file size: 20 MB)
                     </span>
                     <input
                       type="file"
-                      accept=".pdf,.docx,.md"
+                      accept=".pdf,.docx,.md,.xlsx,.xls"
                       onChange={handleFileChange}
                       className="hidden"
                       required

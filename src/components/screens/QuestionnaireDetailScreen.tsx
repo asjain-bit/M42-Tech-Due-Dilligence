@@ -19,6 +19,7 @@ export interface QuestionnaireDetailData {
   status: 'Ready' | 'Draft' | 'Processing'
   questionsCount: number
   initialEditMode?: boolean
+  initialQuestions?: QuestionItem[]
 }
 
 interface QuestionnaireDetailScreenProps {
@@ -50,7 +51,8 @@ export const QuestionnaireDetailScreen: React.FC<QuestionnaireDetailScreenProps>
 
   // Questions list
   const [questions, setQuestions] = useState<QuestionItem[]>(
-    questionnaire.title === 'Presight Technical & Compliance' ? [] : [
+    questionnaire.initialQuestions ??
+    (questionnaire.title === 'Presight Technical & Compliance' ? [] : [
     {
       id: 1,
       question:
@@ -103,7 +105,7 @@ export const QuestionnaireDetailScreen: React.FC<QuestionnaireDetailScreenProps>
       researchNeeded: true,
       attachmentRequired: true,
     },
-  ])
+  ]))
 
   // Handle Question field edits
   const handleQuestionChange = (id: number, field: keyof QuestionItem, value: string | boolean) => {
