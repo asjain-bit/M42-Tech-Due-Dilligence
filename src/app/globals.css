@@ -128,3 +128,30 @@ div[class*='nextjs'],
 .subtle-scrollbar:hover {
   scrollbar-color: #cbd5e1 transparent;
 }
+
+/* Form fields: hover and focus never thicken the stroke (no ring or outline);
+   focus only shifts the 1px border to a subtle grey. Error borders are kept. */
+input:not([type='checkbox']):not([type='radio']):not([type='range']),
+textarea,
+select {
+  outline: none;
+}
+input:not([type='checkbox']):not([type='radio']):not([type='range']):is(
+    :hover,
+    :focus,
+    :focus-visible
+  ),
+textarea:is(:hover, :focus, :focus-visible),
+select:is(:hover, :focus, :focus-visible) {
+  outline: none;
+  --tw-ring-shadow: 0 0 #0000;
+  --tw-ring-offset-shadow: 0 0 #0000;
+  --tw-ring-offset-width: 0px;
+}
+input:not([type='checkbox']):not([type='radio']):not([type='range']):not([class*='border-red']):not(
+    [class*='d92d20']
+  ):focus,
+textarea:not([class*='border-red']):not([class*='d92d20']):focus,
+select:not([class*='border-red']):not([class*='d92d20']):focus {
+  border-color: #cbd5e1;
+}

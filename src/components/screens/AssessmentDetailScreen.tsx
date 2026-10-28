@@ -729,6 +729,25 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
     }
   })
 
+  // After the TDD round the agent suggests a follow-up privacy assessment: PIA when personal
+  // information is processed, DPIA for high-risk solutions
+  const showPrivacySuggestion =
+    currentStatus === 'awaiting_evidence' ||
+    currentStatus === 'completed' ||
+    currentStatus === 'finalised'
+  const privacySuggestion =
+    Number(assessment.caseId.replace(/\D/g, '')) % 2 === 0
+      ? {
+          label: 'DPIA',
+          name: 'Data Protection Impact Assessment',
+          reason: 'the solution is assessed as high-risk',
+        }
+      : {
+          label: 'PIA',
+          name: 'Privacy Impact Assessment',
+          reason: 'the solution processes personal information',
+        }
+
   // Confidence can be changed for answered questions once the call has produced results
   const canEditConfidence = currentStatus === 'awaiting_evidence' || currentStatus === 'completed'
   const confidenceEditQuestion = questions.find((q) => q.id === confidenceEditQuestionId)
@@ -1505,6 +1524,20 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
                     ? 'No summary generated yet. The meeting has not been started.'
                     : 'Overall evaluation across 7 questions; 2 mandatory evidence items outstanding.'}
                 </p>
+                {showPrivacySuggestion && (
+                  <div className="mt-4 p-3.5 rounded-xl bg-[#f0fbfc] border border-[#c5eef1] flex items-start gap-2.5">
+                    <Bot className="w-4 h-4 text-[#0f7f8c] shrink-0 mt-px" />
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-xs font-bold text-[#0d212c]">
+                        Agent suggests a {privacySuggestion.label} ({privacySuggestion.name})
+                      </span>
+                      <span className="text-[11px] text-[#64748b]">
+                        Recommended as the next step after the TDD round because{' '}
+                        {privacySuggestion.reason}.
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1600,7 +1633,7 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
                                       </div>
                                       <button
                                         onClick={() => setConfidenceEditQuestionId(null)}
-                                        className="p-1 rounded-lg border border-[#e2e8f0] text-[#0d212c] hover:bg-slate-50 transition cursor-pointer"
+                                        className="p-1 rounded-lg text-[#0d212c] hover:bg-slate-50 transition cursor-pointer bg-transparent border-0"
                                         aria-label="Close"
                                       >
                                         <X className="w-3.5 h-3.5" />
@@ -1677,6 +1710,11 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
                                           {confidenceReason.length}/{CONFIDENCE_REASON_MAX}
                                         </span>
                                       </div>
+                                      <span className="flex items-start gap-1.5 text-[11px] text-[#64748b]">
+                                        <Bot className="w-3.5 h-3.5 shrink-0 mt-px" />
+                                        This reason is shared with the agent as feedback to improve
+                                        future confidence scoring.
+                                      </span>
                                     </div>
 
                                     <div className="flex justify-end gap-2.5">
@@ -1717,21 +1755,9 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
                             )
                             if (!latestChange) return null
                             return (
-                              <div className="p-3 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] text-[11px] text-[#64748b] flex flex-col gap-0.5">
-                                <span>
-                                  Confidence changed from{' '}
-                                  <strong className="text-[#0d212c]">{latestChange.from}</strong> to{' '}
-                                  <strong className="text-[#0d212c]">{latestChange.to}</strong> by{' '}
-                                  <strong className="text-[#0d212c]">
-                                    {latestChange.changedBy}
-                                  </strong>{' '}
-                                  · {latestChange.date}
-                                </span>
-                                <span>
-                                  Reason:{' '}
-                                  <span className="text-[#0d212c]">{latestChange.reason}</span>
-                                </span>
-                              </div>
+                              <span className="text-[11px] text-[#94a3b8]">
+                                Confidence edited by {latestChange.changedBy} · {latestChange.date}
+                              </span>
                             )
                           })()}
 
