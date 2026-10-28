@@ -737,16 +737,8 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
     currentStatus === 'finalised'
   const privacySuggestion =
     Number(assessment.caseId.replace(/\D/g, '')) % 2 === 0
-      ? {
-          label: 'DPIA',
-          name: 'Data Protection Impact Assessment',
-          reason: 'the solution is assessed as high-risk',
-        }
-      : {
-          label: 'PIA',
-          name: 'Privacy Impact Assessment',
-          reason: 'the solution processes personal information',
-        }
+      ? { label: 'DPIA', reason: 'the solution is assessed as high-risk' }
+      : { label: 'PIA', reason: 'the solution processes personal information' }
 
   // Confidence can be changed for answered questions once the call has produced results
   const canEditConfidence = currentStatus === 'awaiting_evidence' || currentStatus === 'completed'
@@ -1525,17 +1517,14 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
                     : 'Overall evaluation across 7 questions; 2 mandatory evidence items outstanding.'}
                 </p>
                 {showPrivacySuggestion && (
-                  <div className="mt-4 p-3.5 rounded-xl bg-[#f0fbfc] border border-[#c5eef1] flex items-start gap-2.5">
-                    <Bot className="w-4 h-4 text-[#0f7f8c] shrink-0 mt-px" />
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-xs font-bold text-[#0d212c]">
-                        Agent suggests a {privacySuggestion.label} ({privacySuggestion.name})
-                      </span>
-                      <span className="text-[11px] text-[#64748b]">
-                        Recommended as the next step after the TDD round because{' '}
-                        {privacySuggestion.reason}.
-                      </span>
-                    </div>
+                  <div className="mt-4 pt-4 border-t border-[#e2e8f0] flex flex-col gap-0.5">
+                    <span className="text-xs font-bold text-[#0d212c]">
+                      Agent suggests a {privacySuggestion.label}
+                    </span>
+                    <span className="text-[11px] text-[#64748b]">
+                      Recommended as the next step after the TDD round because{' '}
+                      {privacySuggestion.reason}.
+                    </span>
                   </div>
                 )}
               </div>
@@ -1579,162 +1568,176 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
                           </h4>
 
                           {!isScheduled && (
-                            <div className="relative group shrink-0">
-                              {canEditConfidence && q.answer !== '(not answered)' ? (
-                                <button
-                                  onClick={() => openConfidenceEditor(q.id)}
-                                  className="relative cursor-pointer bg-transparent border-0 p-0"
-                                  aria-label={`Edit confidence for question ${q.id}`}
-                                >
-                                  <StatusChip
-                                    label={q.confidence}
-                                    status={q.confidenceType}
-                                    dot={false}
-                                    className="pr-7"
-                                  />
-                                  <Pencil
-                                    className={`w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 ${
-                                      q.confidenceType === 'success'
-                                        ? 'text-[#137333]'
-                                        : 'text-[#b06000]'
-                                    }`}
-                                  />
-                                </button>
-                              ) : (
-                                <div className="cursor-default">
-                                  <StatusChip
-                                    label={q.confidence}
-                                    status={q.confidenceType}
-                                    dot={false}
-                                  />
-                                </div>
-                              )}
-                              {confidenceEditQuestionId !== q.id && (
-                                <div className="pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 absolute right-0 top-7 z-30 w-64 bg-[#0d212c] text-white text-xs p-3 rounded-xl shadow-xl border border-white/10">
-                                  {q.confidenceTooltip}
-                                </div>
-                              )}
+                            <div className="flex flex-col items-end gap-1 shrink-0">
+                              <div className="relative group">
+                                {canEditConfidence && q.answer !== '(not answered)' ? (
+                                  <button
+                                    onClick={() => openConfidenceEditor(q.id)}
+                                    className="relative cursor-pointer bg-transparent border-0 p-0"
+                                    aria-label={`Edit confidence for question ${q.id}`}
+                                  >
+                                    <StatusChip
+                                      label={q.confidence}
+                                      status={q.confidenceType}
+                                      dot={false}
+                                      className="pr-7"
+                                    />
+                                    <Pencil
+                                      className={`w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 ${
+                                        q.confidenceType === 'success'
+                                          ? 'text-[#137333]'
+                                          : 'text-[#b06000]'
+                                      }`}
+                                    />
+                                  </button>
+                                ) : (
+                                  <div className="cursor-default">
+                                    <StatusChip
+                                      label={q.confidence}
+                                      status={q.confidenceType}
+                                      dot={false}
+                                    />
+                                  </div>
+                                )}
+                                {confidenceEditQuestionId !== q.id && (
+                                  <div className="pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 absolute right-0 top-7 z-30 w-64 bg-[#0d212c] text-white text-xs p-3 rounded-xl shadow-xl border border-white/10">
+                                    {q.confidenceTooltip}
+                                  </div>
+                                )}
 
-                              {/* Edit confidence popover, anchored below the chip */}
-                              {confidenceEditQuestionId === q.id && (
-                                <>
-                                  <div
-                                    className="fixed inset-0 z-30"
-                                    onClick={() => setConfidenceEditQuestionId(null)}
-                                  />
-                                  <div className="absolute right-0 top-full mt-3 z-40 w-[380px] max-w-[calc(100vw-2rem)] bg-white rounded-2xl border border-[#e2e8f0] shadow-xl p-5 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-150">
-                                    <div className="absolute -top-1.5 right-10 w-3 h-3 bg-white border-l border-t border-[#e2e8f0] rotate-45" />
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex items-center gap-2.5">
-                                        <Pencil className="w-4.5 h-4.5 text-[#0d212c]" />
-                                        <h4 className="text-sm font-extrabold text-[#0d212c]">
-                                          Edit confidence
-                                        </h4>
+                                {/* Edit confidence popover, anchored below the chip */}
+                                {confidenceEditQuestionId === q.id && (
+                                  <>
+                                    <div
+                                      className="fixed inset-0 z-30"
+                                      onClick={() => setConfidenceEditQuestionId(null)}
+                                    />
+                                    <div className="absolute right-0 top-full mt-3 z-40 w-[380px] max-w-[calc(100vw-2rem)] bg-white rounded-2xl border border-[#e2e8f0] shadow-xl p-5 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-150">
+                                      <div className="absolute -top-1.5 right-10 w-3 h-3 bg-white border-l border-t border-[#e2e8f0] rotate-45" />
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2.5">
+                                          <Pencil className="w-4.5 h-4.5 text-[#0d212c]" />
+                                          <h4 className="text-sm font-extrabold text-[#0d212c]">
+                                            Edit confidence
+                                          </h4>
+                                        </div>
+                                        <button
+                                          onClick={() => setConfidenceEditQuestionId(null)}
+                                          className="p-1 rounded-lg text-[#0d212c] hover:bg-slate-50 transition cursor-pointer bg-transparent border-0"
+                                          aria-label="Close"
+                                        >
+                                          <X className="w-3.5 h-3.5" />
+                                        </button>
                                       </div>
-                                      <button
-                                        onClick={() => setConfidenceEditQuestionId(null)}
-                                        className="p-1 rounded-lg text-[#0d212c] hover:bg-slate-50 transition cursor-pointer bg-transparent border-0"
-                                        aria-label="Close"
-                                      >
-                                        <X className="w-3.5 h-3.5" />
-                                      </button>
-                                    </div>
 
-                                    <div className="flex flex-col gap-2" role="radiogroup">
-                                      {CONFIDENCE_OPTIONS.map(({ level, description }) => {
-                                        const isCurrent = level === q.confidence
-                                        const isSelected = level === newConfidence
-                                        return (
-                                          <button
-                                            key={level}
-                                            role="radio"
-                                            aria-checked={isSelected}
-                                            disabled={isCurrent}
-                                            onClick={() => setNewConfidence(level)}
-                                            className={`w-full text-left flex items-start gap-3 p-3.5 rounded-xl border transition ${
-                                              isCurrent
-                                                ? 'bg-[#f1f5f9] border-[#f1f5f9] cursor-not-allowed'
-                                                : isSelected
-                                                  ? 'bg-white border-[#36c0c9] cursor-pointer'
-                                                  : 'bg-white border-[#e2e8f0] hover:border-[#cbd5e1] cursor-pointer'
-                                            }`}
-                                          >
-                                            <span
-                                              className={`mt-0.5 w-4.5 h-4.5 rounded-full border-2 shrink-0 flex items-center justify-center ${
-                                                isSelected
-                                                  ? 'border-[#0f7f8c]'
-                                                  : isCurrent
-                                                    ? 'border-[#cbd5e1]'
-                                                    : 'border-[#94a3b8]'
+                                      <div className="flex flex-col gap-2" role="radiogroup">
+                                        {CONFIDENCE_OPTIONS.map(({ level, description }) => {
+                                          const isCurrent = level === q.confidence
+                                          const isSelected = level === newConfidence
+                                          return (
+                                            <button
+                                              key={level}
+                                              role="radio"
+                                              aria-checked={isSelected}
+                                              disabled={isCurrent}
+                                              onClick={() => setNewConfidence(level)}
+                                              className={`w-full text-left flex items-start gap-3 p-3.5 rounded-xl border transition ${
+                                                isCurrent
+                                                  ? 'bg-[#f1f5f9] border-[#f1f5f9] cursor-not-allowed'
+                                                  : isSelected
+                                                    ? 'bg-white border-[#36c0c9] cursor-pointer'
+                                                    : 'bg-white border-[#e2e8f0] hover:border-[#cbd5e1] cursor-pointer'
                                               }`}
                                             >
-                                              {isSelected && (
-                                                <span className="w-2 h-2 rounded-full bg-[#0f7f8c]" />
-                                              )}
-                                            </span>
-                                            <span className="flex flex-col gap-0.5">
                                               <span
-                                                className={`text-xs font-bold ${isCurrent ? 'text-[#94a3b8]' : 'text-[#0d212c]'}`}
+                                                className={`mt-0.5 w-4.5 h-4.5 rounded-full border-2 shrink-0 flex items-center justify-center ${
+                                                  isSelected
+                                                    ? 'border-[#0f7f8c]'
+                                                    : isCurrent
+                                                      ? 'border-[#cbd5e1]'
+                                                      : 'border-[#94a3b8]'
+                                                }`}
                                               >
-                                                {level}
+                                                {isSelected && (
+                                                  <span className="w-2 h-2 rounded-full bg-[#0f7f8c]" />
+                                                )}
                                               </span>
-                                              <span
-                                                className={`text-[11px] ${isCurrent ? 'text-[#cbd5e1]' : 'text-[#64748b]'}`}
-                                              >
-                                                {description}
+                                              <span className="flex flex-col gap-0.5">
+                                                <span
+                                                  className={`text-xs font-bold ${isCurrent ? 'text-[#94a3b8]' : 'text-[#0d212c]'}`}
+                                                >
+                                                  {level}
+                                                </span>
+                                                <span
+                                                  className={`text-[11px] ${isCurrent ? 'text-[#cbd5e1]' : 'text-[#64748b]'}`}
+                                                >
+                                                  {description}
+                                                </span>
                                               </span>
-                                            </span>
-                                          </button>
-                                        )
-                                      })}
-                                    </div>
+                                            </button>
+                                          )
+                                        })}
+                                      </div>
 
-                                    <div className="flex flex-col gap-1.5">
-                                      <label
-                                        htmlFor={`confidence-reason-${q.id}`}
-                                        className="text-xs font-bold text-[#0d212c]"
-                                      >
-                                        Reason <span className="text-red-500">*</span>
-                                      </label>
-                                      <div className="relative">
-                                        <textarea
-                                          id={`confidence-reason-${q.id}`}
-                                          value={confidenceReason}
-                                          onChange={(e) => setConfidenceReason(e.target.value)}
-                                          maxLength={CONFIDENCE_REASON_MAX}
-                                          rows={3}
-                                          placeholder="Enter the reason for changing the confidence"
-                                          className="w-full px-3.5 pt-3 pb-6 rounded-xl border border-[#cbd5e1] text-xs font-medium text-[#0d212c] outline-none focus:border-[#94a3b8] bg-white resize-none"
-                                        />
-                                        <span className="absolute right-3 bottom-2.5 text-[10px] text-[#64748b]">
-                                          {confidenceReason.length}/{CONFIDENCE_REASON_MAX}
+                                      <div className="flex flex-col gap-1.5">
+                                        <label
+                                          htmlFor={`confidence-reason-${q.id}`}
+                                          className="text-xs font-bold text-[#0d212c]"
+                                        >
+                                          Reason <span className="text-red-500">*</span>
+                                        </label>
+                                        <div className="relative">
+                                          <textarea
+                                            id={`confidence-reason-${q.id}`}
+                                            value={confidenceReason}
+                                            onChange={(e) => setConfidenceReason(e.target.value)}
+                                            maxLength={CONFIDENCE_REASON_MAX}
+                                            rows={3}
+                                            placeholder="Enter the reason for changing the confidence"
+                                            className="w-full px-3.5 pt-3 pb-6 rounded-xl border border-[#cbd5e1] text-xs font-medium text-[#0d212c] outline-none focus:border-[#94a3b8] bg-white resize-none"
+                                          />
+                                          <span className="absolute right-3 bottom-2.5 text-[10px] text-[#64748b]">
+                                            {confidenceReason.length}/{CONFIDENCE_REASON_MAX}
+                                          </span>
+                                        </div>
+                                        <span className="flex items-start gap-1.5 text-[11px] text-[#64748b]">
+                                          <Bot className="w-3.5 h-3.5 shrink-0 mt-px" />
+                                          This reason is shared with the agent as feedback to
+                                          improve future confidence scoring.
                                         </span>
                                       </div>
-                                      <span className="flex items-start gap-1.5 text-[11px] text-[#64748b]">
-                                        <Bot className="w-3.5 h-3.5 shrink-0 mt-px" />
-                                        This reason is shared with the agent as feedback to improve
-                                        future confidence scoring.
-                                      </span>
-                                    </div>
 
-                                    <div className="flex justify-end gap-2.5">
-                                      <button
-                                        onClick={() => setConfidenceEditQuestionId(null)}
-                                        className="px-6 py-2.5 rounded-xl border border-[#e2e8f0] bg-white text-xs font-bold text-[#0d212c] hover:bg-slate-50 transition cursor-pointer"
-                                      >
-                                        Cancel
-                                      </button>
-                                      <button
-                                        onClick={handleConfirmConfidenceChange}
-                                        disabled={!newConfidence || !confidenceReason.trim()}
-                                        className="px-9 py-2.5 rounded-xl bg-[#0f7f8c] hover:bg-[#0d6d78] text-white text-xs font-bold transition cursor-pointer border-0 disabled:opacity-50 disabled:cursor-not-allowed"
-                                      >
-                                        Save
-                                      </button>
+                                      <div className="flex justify-end gap-2.5">
+                                        <button
+                                          onClick={() => setConfidenceEditQuestionId(null)}
+                                          className="px-6 py-2.5 rounded-xl border border-[#e2e8f0] bg-white text-xs font-bold text-[#0d212c] hover:bg-slate-50 transition cursor-pointer"
+                                        >
+                                          Cancel
+                                        </button>
+                                        <button
+                                          onClick={handleConfirmConfidenceChange}
+                                          disabled={!newConfidence || !confidenceReason.trim()}
+                                          className="px-9 py-2.5 rounded-xl bg-[#0f7f8c] hover:bg-[#0d6d78] text-white text-xs font-bold transition cursor-pointer border-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                          Save
+                                        </button>
+                                      </div>
                                     </div>
-                                  </div>
-                                </>
-                              )}
+                                  </>
+                                )}
+                              </div>
+                              {(() => {
+                                const latestChange = confidenceChanges.find(
+                                  (change) => change.questionId === q.id
+                                )
+                                if (!latestChange) return null
+                                return (
+                                  <span className="text-[11px] text-[#94a3b8] text-right max-w-[200px]">
+                                    Confidence edited by {latestChange.changedBy} ·{' '}
+                                    {latestChange.date}
+                                  </span>
+                                )
+                              })()}
                             </div>
                           )}
                         </div>
@@ -1747,19 +1750,6 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
                               : q.answer}
                           </span>
                         </div>
-
-                        {!isScheduled &&
-                          (() => {
-                            const latestChange = confidenceChanges.find(
-                              (change) => change.questionId === q.id
-                            )
-                            if (!latestChange) return null
-                            return (
-                              <span className="text-[11px] text-[#94a3b8]">
-                                Confidence edited by {latestChange.changedBy} · {latestChange.date}
-                              </span>
-                            )
-                          })()}
 
                         {!isScheduled && showAnswerKey && (
                           <>

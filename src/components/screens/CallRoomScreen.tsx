@@ -1105,7 +1105,7 @@ export const CallRoomScreen: React.FC<CallRoomScreenProps> = ({
             </div>
 
             {/* Question progress: current question and the upcoming one */}
-            {assessmentStarted && visibleQuestions.length > 0 && (
+            {userRole === 'admin' && assessmentStarted && visibleQuestions.length > 0 && (
               <div className="w-full max-w-xl flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 {visibleQuestions.map((q) => (
                   <div
@@ -1117,36 +1117,17 @@ export const CallRoomScreen: React.FC<CallRoomScreenProps> = ({
                     <div className="w-10 h-10 rounded-full bg-[#e6f7f8] text-[#36c0c9] text-sm font-bold flex items-center justify-center shrink-0">
                       {q.number}
                     </div>
-                    <div className="flex flex-col min-w-0 flex-1">
-                      <span
-                        className="text-sm font-bold text-[#0d212c] truncate"
-                        title={q.question}
-                      >
-                        {q.question}
-                      </span>
-                      <span className="text-xs text-[#64748b] truncate">
-                        {q.isCurrent
-                          ? agentOnHold
-                            ? 'Paused while the agent is on hold'
-                            : 'Sam is asking this question'
-                          : 'Opens when the agent reaches it'}
-                      </span>
-                    </div>
+                    <span className="text-sm font-bold text-[#0d212c] min-w-0 flex-1">
+                      {q.question}
+                    </span>
                     <span
-                      className={`shrink-0 flex items-center gap-1.5 px-3 py-1 rounded-full border text-[11px] font-semibold ${
+                      className={`shrink-0 px-3 py-1 rounded-full border text-[11px] font-semibold ${
                         q.isCurrent
                           ? 'bg-[#f0fbfc] border-[#bdeaee] text-[#0f7f8c]'
                           : 'bg-white border-[#e2e8f0] text-[#64748b]'
                       }`}
                     >
-                      <span
-                        className={`w-1.5 h-1.5 rounded-full ${
-                          q.isCurrent
-                            ? `bg-[#36c0c9] ${agentOnHold ? '' : 'animate-pulse'}`
-                            : 'bg-[#64748b]'
-                        }`}
-                      />
-                      {q.isCurrent ? 'In progress' : 'Not reached'}
+                      {q.isCurrent ? 'In progress' : 'Up next'}
                     </span>
                   </div>
                 ))}
