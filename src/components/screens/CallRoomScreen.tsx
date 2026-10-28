@@ -19,6 +19,8 @@ import {
   Clock,
   Check,
   Download,
+  FileSearch,
+  ShieldAlert,
 } from 'lucide-react'
 import { VendorDispatchData } from './ConfigureVendorCallScreen'
 import type { QuestionItem } from './QuestionnaireDetailScreen'
@@ -49,6 +51,7 @@ interface CallRoomScreenProps {
 
 // Seconds the agent spends on each question in the simulated call
 const QUESTION_STEP_SECONDS = 20
+const QUESTION_ALERT_DELAY_SECONDS = 3
 
 // Sample questionnaire transcript
 const sampleTranscript: TranscriptEntry[] = [
@@ -182,6 +185,18 @@ export const CallRoomScreen: React.FC<CallRoomScreenProps> = ({
     )
     return () => clearInterval(t)
   }, [assessmentStarted, agentOnHold, questions.length])
+
+  // Prototype: a few seconds into each question the agent raises an alert on it
+  const [alertQuestionIndex, setAlertQuestionIndex] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (!assessmentStarted || agentOnHold) return
+    const t = setTimeout(
+      () => setAlertQuestionIndex(currentQuestionIndex),
+      QUESTION_ALERT_DELAY_SECONDS * 1000
+    )
+    return () => clearTimeout(t)
+  }, [assessmentStarted, agentOnHold, currentQuestionIndex])
 
   // Only the running question and the next one are shown
   const visibleQuestions = questions
@@ -1117,9 +1132,23 @@ export const CallRoomScreen: React.FC<CallRoomScreenProps> = ({
                     <div className="w-10 h-10 rounded-full bg-[#e6f7f8] text-[#36c0c9] text-sm font-bold flex items-center justify-center shrink-0">
                       {q.number}
                     </div>
-                    <span className="text-sm font-bold text-[#0d212c] min-w-0 flex-1">
-                      {q.question}
-                    </span>
+                    <div className="min-w-0 flex-1 flex flex-col gap-1.5">
+                      <span className="text-sm font-bold text-[#0d212c]">{q.question}</span>
+                      {q.isCurrent &&
+                        alertQuestionIndex === currentQuestionIndex &&
+                        (currentQuestionIndex % 2 === 0 ? (
+                          <span className="flex items-center gap-1.5 text-[11px] font-medium text-[#b06000] animate-in fade-in duration-300">
+                            <FileSearch className="w-3.5 h-3.5 shrink-0" />
+                            Background research: the vendor&apos;s claim could not be verified
+                            from public sources
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1.5 text-[11px] font-medium text-[#d92d20] animate-in fade-in duration-300">
+                            <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
+                            Guardrail violation: personal data shared by the vendor was redacted
+                          </span>
+                        ))}
+                    </div>
                     <span
                       className={`shrink-0 px-3 py-1 rounded-full border text-[11px] font-semibold ${
                         q.isCurrent

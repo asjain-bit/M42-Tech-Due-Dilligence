@@ -1567,7 +1567,8 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
                             {q.id}. [{q.category}] {q.question}
                           </h4>
 
-                          {!isScheduled && (
+                          {/* Confidence is only scored for questions that have an answer */}
+                          {!isScheduled && q.answer !== '(not answered)' && (
                             <div className="flex flex-col items-end gap-1 shrink-0">
                               <div className="relative group">
                                 {canEditConfidence && q.answer !== '(not answered)' ? (
@@ -1887,8 +1888,8 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
                           </div>
                         )}
 
-                        {/* Reviewer Comment Section (ONLY for Low confidence questions) */}
-                        {isLowConfidence && (
+                        {/* Reviewer Comment Section (Low confidence questions; an added comment stays visible after the confidence changes) */}
+                        {(isLowConfidence || (!isScheduled && Boolean(questionComments[q.id]))) && (
                           <div className="mt-1 flex flex-col gap-2">
                             {/* If comment has already been added */}
                             {questionComments[q.id] ? (
