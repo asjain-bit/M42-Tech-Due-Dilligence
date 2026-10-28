@@ -1,15 +1,34 @@
 'use client'
 
 import React, { useState, useMemo } from 'react'
-import { ChevronLeft, ChevronRight, Users, RefreshCw, Folder, Info } from 'lucide-react'
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  Users,
+  RefreshCw,
+  Folder,
+  Info,
+} from 'lucide-react'
 import { StatusChip } from '@/components/atoms/StatusChip'
 import { SearchBar } from '@/components/molecules/SearchBar'
+import { FilterMenu } from '@/components/molecules/FilterMenu'
 import {
   AssessmentDetailScreen,
   AssessmentDetailData,
   AssessmentStatus,
   MeetingLogEntry,
 } from './AssessmentDetailScreen'
+
+// An earlier round already conducted for the same case
+interface PastRound {
+  id: string
+  questionnaire: string
+  round: string
+  status: AssessmentStatus
+  score: string
+  createdDate: string
+}
 
 interface AssessmentRow {
   id: string
@@ -22,12 +41,38 @@ interface AssessmentRow {
   createdDate: string
   meetingDateTime?: string
   meetingLog?: MeetingLogEntry[]
+  pastRounds?: PastRound[]
 }
+
+const STATUS_LABELS: Record<AssessmentStatus, string> = {
+  awaiting_evidence: 'Awaiting evidence',
+  ready: 'Ready',
+  cancelled: 'Cancelled',
+  scheduled: 'Scheduled',
+  finalised: 'Finalised',
+  completed: 'Completed',
+}
+
+const getStatusChipStatus = (status: AssessmentStatus) =>
+  status === 'awaiting_evidence'
+    ? 'warning'
+    : status === 'ready'
+      ? 'info'
+      : status === 'cancelled'
+        ? 'error'
+        : status === 'scheduled'
+          ? 'info'
+          : status === 'finalised'
+            ? 'finalised'
+            : 'success'
 
 export const DashboardScreen: React.FC = () => {
   const [selectedAssessment, setSelectedAssessment] = useState<AssessmentDetailData | null>(null)
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('all')
   const [searchTerm, setSearchTerm] = useState('')
+  const [assessmentFilters, setAssessmentFilters] = useState<Record<string, string>>({})
+  // Cases whose earlier rounds are expanded in the table
+  const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({})
 
   // Show 8 rows per page consistently across all tables
   const [currentPage, setCurrentPage] = useState(1)
@@ -54,6 +99,16 @@ export const DashboardScreen: React.FC = () => {
       status: 'completed',
       score: 'High',
       createdDate: '28 Aug 2026, 02:15 PM',
+      pastRounds: [
+        {
+          id: 'ast-2-r1',
+          questionnaire: 'Data Protection & Privacy',
+          round: 'Round 1',
+          status: 'finalised',
+          score: 'Medium',
+          createdDate: '06 Aug 2026, 10:00 AM',
+        },
+      ],
     },
     {
       id: 'ast-3',
@@ -94,6 +149,16 @@ export const DashboardScreen: React.FC = () => {
       status: 'awaiting_evidence',
       score: 'Low',
       createdDate: '12 Aug 2026, 03:45 PM',
+      pastRounds: [
+        {
+          id: 'ast-6-r1',
+          questionnaire: 'HIPAA & Healthcare Data Compliance',
+          round: 'Round 1',
+          status: 'finalised',
+          score: 'Low',
+          createdDate: '22 Jul 2026, 11:30 AM',
+        },
+      ],
     },
     {
       id: 'ast-7',
@@ -104,6 +169,24 @@ export const DashboardScreen: React.FC = () => {
       status: 'completed',
       score: 'High',
       createdDate: '10 Aug 2026, 01:25 PM',
+      pastRounds: [
+        {
+          id: 'ast-7-r2',
+          questionnaire: 'Third-Party Software Supply Chain Security',
+          round: 'Round 2',
+          status: 'finalised',
+          score: 'Medium',
+          createdDate: '27 Jul 2026, 03:10 PM',
+        },
+        {
+          id: 'ast-7-r1',
+          questionnaire: 'Third-Party Software Supply Chain Security',
+          round: 'Round 1',
+          status: 'finalised',
+          score: 'Low',
+          createdDate: '09 Jul 2026, 10:40 AM',
+        },
+      ],
     },
     {
       id: 'ast-8',
@@ -144,6 +227,16 @@ export const DashboardScreen: React.FC = () => {
       status: 'awaiting_evidence',
       score: 'Low',
       createdDate: '28 Jul 2026, 04:15 PM',
+      pastRounds: [
+        {
+          id: 'ast-11-r1',
+          questionnaire: 'UAE DOH Health Data Residency Compliance',
+          round: 'Round 1 - Compliance',
+          status: 'finalised',
+          score: 'Low',
+          createdDate: '07 Jul 2026, 09:15 AM',
+        },
+      ],
     },
     {
       id: 'ast-12',
@@ -202,9 +295,45 @@ export const DashboardScreen: React.FC = () => {
         item.vendor.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.questionnaire.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.round.toLowerCase().includes(searchTerm.toLowerCase())
-      return matchesStatus && matchesSearch
+      const matchesFilters =
+        (!assessmentFilters.vendor || item.vendor === assessmentFilters.vendor) &&
+        (!assessmentFilters.status || STATUS_LABELS[item.status] === assessmentFilters.status) &&
+        (!assessmentFilters.confidence || item.score === assessmentFilters.confidence) &&
+        (!assessmentFilters.questionnaire ||
+          item.questionnaire === assessmentFilters.questionnaire) &&
+        (!assessmentFilters.rounds ||
+          (assessmentFilters.rounds === 'Multiple rounds') === Boolean(item.pastRounds?.length))
+      return matchesStatus && matchesSearch && matchesFilters
     })
-  }, [assessments, selectedStatusFilter, searchTerm])
+  }, [assessments, selectedStatusFilter, searchTerm, assessmentFilters])
+
+  // Filter options are built from the assessments currently listed
+  const assessmentFilterFields = useMemo(() => {
+    const unique = (values: string[]) => [...new Set(values)].sort((a, b) => a.localeCompare(b))
+    return [
+      { key: 'vendor', label: 'Vendor name', options: unique(assessments.map((a) => a.vendor)) },
+      {
+        key: 'status',
+        label: 'Status',
+        options: unique(assessments.map((a) => STATUS_LABELS[a.status])),
+      },
+      { key: 'confidence', label: 'Confidence', options: ['High', 'Medium', 'Low'] },
+      {
+        key: 'questionnaire',
+        label: 'Questionnaire',
+        options: unique(assessments.map((a) => a.questionnaire)),
+      },
+      { key: 'rounds', label: 'Rounds', options: ['Single round', 'Multiple rounds'] },
+    ]
+  }, [assessments])
+
+  const openAssessment = (row: AssessmentRow, round?: PastRound) => {
+    const source = round ? { ...row, ...round } : row
+    setSelectedAssessment({
+      ...source,
+      score: source.score === 'High' ? '94.0' : source.score === 'Medium' ? '72.0' : '0.0',
+    })
+  }
 
   // Pagination math (8 items per page)
   const totalPages = Math.ceil(filteredAssessments.length / ITEMS_PER_PAGE) || 1
@@ -354,11 +483,21 @@ export const DashboardScreen: React.FC = () => {
       {/* Assessments Title & Search Bar Row */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
         <h2 className="text-xl font-extrabold text-[#0d212c]">Assessments</h2>
-        <div className="w-full sm:w-80 shrink-0">
-          <SearchBar
-            placeholder="Search vendor name, questionnaire..."
-            onSearch={handleSearchChange}
+        <div className="flex items-stretch gap-3 w-full sm:w-auto">
+          <FilterMenu
+            fields={assessmentFilterFields}
+            values={assessmentFilters}
+            onChange={(values) => {
+              setAssessmentFilters(values)
+              setCurrentPage(1)
+            }}
           />
+          <div className="w-full sm:w-80 shrink-0">
+            <SearchBar
+              placeholder="Search vendor name, questionnaire..."
+              onSearch={handleSearchChange}
+            />
+          </div>
         </div>
       </div>
 
@@ -402,102 +541,143 @@ export const DashboardScreen: React.FC = () => {
                 <th className="py-3.5 px-4">Status</th>
                 <th className="py-3.5 px-4">Confidence Level</th>
                 <th className="py-3.5 px-4">Created date</th>
+                <th className="py-3.5 px-4 w-12">
+                  <span className="sr-only">Rounds</span>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#e2e8f0]/60">
               {paginatedAssessments.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-[#64748b] text-sm">
+                  <td colSpan={8} className="py-8 text-center text-[#64748b] text-sm">
                     No assessments matching search criteria.
                   </td>
                 </tr>
               ) : (
-                paginatedAssessments.map((row) => (
-                  <tr
-                    key={row.id}
-                    onClick={() =>
-                      setSelectedAssessment({
-                        ...row,
-                        score:
-                          row.score === 'High' ? '94.0' : row.score === 'Medium' ? '72.0' : '0.0',
-                      })
-                    }
-                    className="hover:bg-[#f8fafc] transition cursor-pointer group"
-                  >
-                    <td className="py-3.5 px-4 font-bold text-xs text-[#0d212c] whitespace-nowrap">
-                      {row.caseId}
-                    </td>
-                    <td
-                      className="py-3.5 px-4 font-semibold text-xs text-[#0d212c] group-hover:text-[#36c0c9] truncate"
-                      title={row.vendor}
-                    >
-                      {row.vendor}
-                    </td>
-                    <td
-                      className="py-3.5 px-4 text-xs text-[#0d212c] truncate"
-                      title={row.questionnaire}
-                    >
-                      {row.questionnaire}
-                    </td>
-                    <td
-                      className="py-3.5 px-4 text-[#64748b] text-xs font-medium"
-                      title={row.round}
-                    >
-                      {row.round}
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <StatusChip
-                        label={
-                          row.status === 'awaiting_evidence'
-                            ? 'Awaiting evidence'
-                            : row.status === 'ready'
-                              ? 'Ready'
-                              : row.status === 'cancelled'
-                                ? 'Cancelled'
-                                : row.status === 'scheduled'
-                                  ? 'Scheduled'
-                                  : row.status === 'finalised'
-                                    ? 'Finalised'
-                                    : 'Completed'
-                        }
-                        status={
-                          row.status === 'awaiting_evidence'
-                            ? 'warning'
-                            : row.status === 'ready'
-                              ? 'info'
-                              : row.status === 'cancelled'
-                                ? 'error'
-                                : row.status === 'scheduled'
-                                  ? 'info'
-                                  : row.status === 'finalised'
-                                    ? 'finalised'
-                                    : 'success'
-                        }
-                        dot={false}
-                      />
-                    </td>
-                    <td className="py-3.5 px-4">
-                      {row.score === '-' ? (
-                        <span className="text-[#64748b] font-[#64748b] text-xs pl-2.5">-</span>
-                      ) : (
-                        <StatusChip
-                          label={row.score}
-                          status={
-                            row.score === 'High'
-                              ? 'success'
-                              : row.score === 'Medium'
-                                ? 'warning'
-                                : 'warning'
-                          }
-                          dot={false}
-                        />
-                      )}
-                    </td>
-                    <td className="py-3.5 px-4 text-[#64748b] text-xs font-medium">
-                      {row.createdDate}
-                    </td>
-                  </tr>
-                ))
+                paginatedAssessments.map((row) => {
+                  const hasPastRounds = Boolean(row.pastRounds?.length)
+                  const isExpanded = hasPastRounds && Boolean(expandedRows[row.id])
+                  return (
+                    <React.Fragment key={row.id}>
+                      <tr
+                        onClick={() => openAssessment(row)}
+                        className="hover:bg-[#f8fafc] transition cursor-pointer group"
+                      >
+                        <td className="py-3.5 px-4 font-bold text-xs text-[#0d212c] whitespace-nowrap">
+                          {row.caseId}
+                        </td>
+                        <td
+                          className="py-3.5 px-4 font-semibold text-xs text-[#0d212c] group-hover:text-[#36c0c9] truncate"
+                          title={row.vendor}
+                        >
+                          {row.vendor}
+                        </td>
+                        <td
+                          className="py-3.5 px-4 text-xs text-[#0d212c] truncate"
+                          title={row.questionnaire}
+                        >
+                          {row.questionnaire}
+                        </td>
+                        <td
+                          className="py-3.5 px-4 text-[#64748b] text-xs font-medium"
+                          title={row.round}
+                        >
+                          {row.round}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <StatusChip
+                            label={STATUS_LABELS[row.status]}
+                            status={getStatusChipStatus(row.status)}
+                            dot={false}
+                          />
+                        </td>
+                        <td className="py-3.5 px-4">
+                          {row.score === '-' ? (
+                            <span className="text-[#64748b] font-[#64748b] text-xs pl-2.5">-</span>
+                          ) : (
+                            <StatusChip
+                              label={row.score}
+                              status={row.score === 'High' ? 'success' : 'warning'}
+                              dot={false}
+                            />
+                          )}
+                        </td>
+                        <td className="py-3.5 px-4 text-[#64748b] text-xs font-medium">
+                          {row.createdDate}
+                        </td>
+                        <td className="py-3.5 px-4 text-right">
+                          {hasPastRounds && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setExpandedRows((prev) => ({ ...prev, [row.id]: !prev[row.id] }))
+                              }}
+                              aria-expanded={isExpanded}
+                              aria-label={`${isExpanded ? 'Hide' : 'Show'} all rounds for ${row.caseId}`}
+                              title={isExpanded ? 'Hide earlier rounds' : 'Show all rounds'}
+                              className={`w-7 h-7 rounded-lg border border-[#e2e8f0] bg-white text-[#64748b] hover:text-[#0d212c] hover:border-[#cbd5e1] inline-flex items-center justify-center transition cursor-pointer focus:opacity-100 ${
+                                isExpanded ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                              }`}
+                            >
+                              <ChevronDown
+                                className={`w-4 h-4 transition-transform duration-200 ${
+                                  isExpanded ? 'rotate-180' : ''
+                                }`}
+                              />
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+
+                      {/* Earlier rounds conducted for this case, newest first */}
+                      {isExpanded &&
+                        row.pastRounds?.map((round) => (
+                          <tr
+                            key={round.id}
+                            onClick={() => openAssessment(row, round)}
+                            className="bg-[#f8fafc]/70 hover:bg-[#f1f5f9] transition cursor-pointer animate-in fade-in duration-150"
+                          >
+                            <td className="py-3 px-4 text-xs text-[#64748b] whitespace-nowrap">
+                              {row.caseId}
+                            </td>
+                            <td className="py-3 px-4 text-xs text-[#64748b]">
+                              <span className="pl-3 border-l-2 border-[#cbd5e1]">
+                                Earlier round
+                              </span>
+                            </td>
+                            <td
+                              className="py-3 px-4 text-xs text-[#0d212c] truncate"
+                              title={round.questionnaire}
+                            >
+                              {round.questionnaire}
+                            </td>
+                            <td className="py-3 px-4 text-[#64748b] text-xs font-medium">
+                              {round.round}
+                            </td>
+                            <td className="py-3 px-4">
+                              <StatusChip
+                                label={STATUS_LABELS[round.status]}
+                                status={getStatusChipStatus(round.status)}
+                                dot={false}
+                              />
+                            </td>
+                            <td className="py-3 px-4">
+                              <StatusChip
+                                label={round.score}
+                                status={round.score === 'High' ? 'success' : 'warning'}
+                                dot={false}
+                              />
+                            </td>
+                            <td className="py-3 px-4 text-[#64748b] text-xs font-medium">
+                              {round.createdDate}
+                            </td>
+                            <td />
+                          </tr>
+                        ))}
+                    </React.Fragment>
+                  )
+                })
               )}
             </tbody>
           </table>

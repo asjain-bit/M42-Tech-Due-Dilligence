@@ -770,7 +770,10 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
     showTimedToast(`Question ${confidenceEditQuestion.id} confidence updated to ${newConfidence}`)
   }
 
-  const lowConfidenceQuestions = questions.filter((q) => q.confidence === 'Low confidence')
+  // Only answered questions are scored, so unanswered ones never need a reviewer comment
+  const lowConfidenceQuestions = questions.filter(
+    (q) => q.confidence === 'Low confidence' && q.answer !== '(not answered)'
+  )
   const allLowConfidenceCommentsAdded =
     lowConfidenceQuestions.length === 0 ||
     lowConfidenceQuestions.every((q) => Boolean(questionComments[q.id]?.text?.trim()))
@@ -1888,8 +1891,9 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
                           </div>
                         )}
 
-                        {/* Reviewer Comment Section (Low confidence questions; an added comment stays visible after the confidence changes) */}
-                        {(isLowConfidence || (!isScheduled && Boolean(questionComments[q.id]))) && (
+                        {/* Reviewer Comment Section (answered Low confidence questions; an added comment stays visible after the confidence changes) */}
+                        {q.answer !== '(not answered)' &&
+                          (isLowConfidence || (!isScheduled && Boolean(questionComments[q.id]))) && (
                           <div className="mt-1 flex flex-col gap-2">
                             {/* If comment has already been added */}
                             {questionComments[q.id] ? (

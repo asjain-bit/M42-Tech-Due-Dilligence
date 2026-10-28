@@ -95,6 +95,7 @@ The application skeleton is governed by the `AppShell` template component matchi
 | :--- | :--- | :--- | :--- |
 | **FormField** | `src/components/molecules/FormField` | Label + Input atom + helper text / error message. | SettingsPanel, AppDialog |
 | **SearchBar** | `src/components/molecules/SearchBar` | Input atom + Icon atom + Search Button atom. | SiteHeader, DataTable |
+| **FilterMenu** | `src/components/molecules/FilterMenu` | Filter button with active count that opens a popover of Select atom dropdowns. | DashboardScreen, VendorsScreen |
 | **Toast** | `src/components/molecules/Toast` | Alert notification card with Icon, message, and close Button. | SettingsPanel, AppShell |
 | **AppDialog** | `src/components/molecules/AppDialog` | Modal dialog backdrop + window with action Buttons. | SettingsPanel, DataTable |
 | **KPICard** | `src/components/molecules/KPICard` | Metric display card with title, value, Badge, and trend Icon. | SettingsPanel, AppShell, page.tsx |

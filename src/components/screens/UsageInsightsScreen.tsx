@@ -273,9 +273,8 @@ const computeAiCost = (week: WeekUsage, inputs: RoiInputs) =>
     )
   )
 
-const CHART_WIDTH = 640
-const CHART_HEIGHT = 300
-const CHART_PLOT = { left: 56, right: 500, top: 24, bottom: 250 }
+// Space kept around the plot for axis labels and the end-of-line value labels
+const CHART_PADDING = { left: 56, right: 130, top: 16, bottom: 40 }
 
 interface CostChartProps {
   manual: number[]
@@ -285,6 +284,27 @@ interface CostChartProps {
 
 // Weekly manual cost vs AI cost line chart; the selected week is highlighted
 function CostChart({ manual, ai, selectedIndex }: CostChartProps) {
+  // The chart is drawn at the container's size so it fills the card height
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [size, setSize] = useState({ width: 640, height: 300 })
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const observer = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect
+      if (width > 0 && height > 0) setSize({ width, height })
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
+  const CHART_PLOT = {
+    left: CHART_PADDING.left,
+    right: size.width - CHART_PADDING.right,
+    top: CHART_PADDING.top,
+    bottom: size.height - CHART_PADDING.bottom,
+  }
   const maxValue = Math.max(...manual, ...ai, 1)
   const tickStep = maxValue <= 6000 ? 1000 : Math.ceil(maxValue / 5000) * 1000
   const yMax = Math.ceil(maxValue / tickStep) * tickStep
@@ -303,85 +323,87 @@ function CostChart({ manual, ai, selectedIndex }: CostChartProps) {
   ]
 
   return (
-    <svg
-      viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
-      className="w-full h-auto"
-      role="img"
-      aria-label="Weekly manual cost vs AI cost"
-    >
-      {ticks.map((t) => (
-        <g key={t}>
-          <line
-            x1={CHART_PLOT.left}
-            x2={CHART_PLOT.right}
-            y1={y(t)}
-            y2={y(t)}
-            stroke="#f1f5f9"
-            strokeWidth={1}
-          />
-          <text x={CHART_PLOT.left - 12} y={y(t) + 4} textAnchor="end" fontSize={12} fill="#94a3b8">
-            ${t / 1000 === 0 ? 0 : `${t / 1000}K`}
-          </text>
-        </g>
-      ))}
-
-      <line
-        x1={x(selectedIndex)}
-        x2={x(selectedIndex)}
-        y1={CHART_PLOT.top}
-        y2={CHART_PLOT.bottom}
-        stroke="#cbd5e1"
-        strokeDasharray="4 4"
-        strokeWidth={1}
-      />
-
-      {series.map((s) => (
-        <g key={s.key}>
-          <polyline
-            points={points(s.values)}
-            fill="none"
-            stroke={s.color}
-            strokeWidth={2.5}
-            strokeLinejoin="round"
-            strokeLinecap="round"
-          />
-          {s.values.map((v, i) => (
-            <circle
-              key={i}
-              cx={x(i)}
-              cy={y(v)}
-              r={i === selectedIndex ? 6 : 4}
-              fill={s.color}
-              stroke="#ffffff"
-              strokeWidth={i === selectedIndex ? 2 : 0}
+    <div ref={containerRef} className="relative w-full h-full min-h-[260px]">
+      <svg
+        viewBox={`0 0 ${size.width} ${size.height}`}
+        className="absolute inset-0 w-full h-full"
+        role="img"
+        aria-label="Weekly manual cost vs AI cost"
+      >
+        {ticks.map((t) => (
+          <g key={t}>
+            <line
+              x1={CHART_PLOT.left}
+              x2={CHART_PLOT.right}
+              y1={y(t)}
+              y2={y(t)}
+              stroke="#f1f5f9"
+              strokeWidth={1}
             />
-          ))}
-          <text
-            x={x(last) + 14}
-            y={y(s.values[last]) + 5}
-            fontSize={14}
-            fontWeight={600}
-            fill="#0d212c"
-          >
-            {s.label} ${s.values[last].toLocaleString()}
-          </text>
-        </g>
-      ))}
+            <text x={CHART_PLOT.left - 12} y={y(t) + 4} textAnchor="end" fontSize={12} fill="#94a3b8">
+              ${t / 1000 === 0 ? 0 : `${t / 1000}K`}
+            </text>
+          </g>
+        ))}
 
-      {OCTOBER_WEEKS.map((w, i) => (
-        <text
-          key={w.id}
-          x={x(i)}
-          y={CHART_PLOT.bottom + 32}
-          textAnchor="middle"
-          fontSize={12}
-          fontWeight={i === selectedIndex ? 700 : 400}
-          fill={i === selectedIndex ? '#0d212c' : '#94a3b8'}
-        >
-          {w.shortLabel}
-        </text>
-      ))}
-    </svg>
+        <line
+          x1={x(selectedIndex)}
+          x2={x(selectedIndex)}
+          y1={CHART_PLOT.top}
+          y2={CHART_PLOT.bottom}
+          stroke="#cbd5e1"
+          strokeDasharray="4 4"
+          strokeWidth={1}
+        />
+
+        {series.map((s) => (
+          <g key={s.key}>
+            <polyline
+              points={points(s.values)}
+              fill="none"
+              stroke={s.color}
+              strokeWidth={2.5}
+              strokeLinejoin="round"
+              strokeLinecap="round"
+            />
+            {s.values.map((v, i) => (
+              <circle
+                key={i}
+                cx={x(i)}
+                cy={y(v)}
+                r={i === selectedIndex ? 6 : 4}
+                fill={s.color}
+                stroke="#ffffff"
+                strokeWidth={i === selectedIndex ? 2 : 0}
+              />
+            ))}
+            <text
+              x={x(last) + 14}
+              y={y(s.values[last]) + 5}
+              fontSize={14}
+              fontWeight={600}
+              fill="#0d212c"
+            >
+              {s.label} ${s.values[last].toLocaleString()}
+            </text>
+          </g>
+        ))}
+
+        {OCTOBER_WEEKS.map((w, i) => (
+          <text
+            key={w.id}
+            x={x(i)}
+            y={CHART_PLOT.bottom + 28}
+            textAnchor="middle"
+            fontSize={12}
+            fontWeight={i === selectedIndex ? 700 : 400}
+            fill={i === selectedIndex ? '#0d212c' : '#94a3b8'}
+          >
+            {w.shortLabel}
+          </text>
+        ))}
+      </svg>
+    </div>
   )
 }
 
@@ -427,12 +449,16 @@ function NumericStepperInput({
   const [localStr, setLocalStr] = useState<string>(format(value))
 
   useEffect(() => {
-    setLocalStr((prev) => (parseFloat(prev) === value ? prev : value.toFixed(decimals)))
+    // Keep an emptied field empty while editing instead of putting a 0 back
+    setLocalStr((prev) =>
+      parseFloat(prev) === value || (prev === '' && value === 0) ? prev : value.toFixed(decimals)
+    )
   }, [value, decimals])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value
-    const filtered = raw.replace(/[^0-9.]/g, '')
+    // Drop leading zeros so typing into a 0 field gives "5", not "05"
+    const filtered = raw.replace(/[^0-9.]/g, '').replace(/^0+(?=\d)/, '')
     setLocalStr(filtered)
     const num = parseFloat(filtered)
     if (!isNaN(num)) {
@@ -479,6 +505,7 @@ function NumericStepperInput({
           value={localStr}
           onChange={handleInputChange}
           onBlur={handleBlur}
+          onFocus={(e) => e.target.select()}
           className="w-14 bg-transparent text-xs sm:text-[13px] font-semibold text-[#0d212c] text-right outline-none mr-1.5 leading-none"
         />
         <div className="flex flex-col items-center justify-center border-l border-[#f1f5f9] pl-1.5 text-[#94a3b8] -space-y-0.5">
@@ -1086,7 +1113,7 @@ export const UsageInsightsScreen: React.FC = () => {
             </div>
 
             {roiView === 'chart' ? (
-              <div className="flex-1 flex items-center pt-4">
+              <div className="flex-1 flex pt-4">
                 <CostChart
                   manual={manualCostSeries}
                   ai={aiCostSeries}

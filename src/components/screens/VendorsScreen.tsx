@@ -20,6 +20,7 @@ import {
 
 import { StatusChip } from '@/components/atoms/StatusChip'
 import { CountryFlag } from '@/components/atoms/CountryFlag'
+import { FilterMenu } from '@/components/molecules/FilterMenu'
 import { ConfigureVendorCallScreen, VendorDispatchData } from './ConfigureVendorCallScreen'
 
 interface VendorRow {
@@ -55,6 +56,7 @@ export const VendorsScreen: React.FC = () => {
   const [dispatchSuccessToast, setDispatchSuccessToast] = useState<string | null>(null)
 
   const [searchTerm, setSearchTerm] = useState('')
+  const [vendorFilters, setVendorFilters] = useState<Record<string, string>>({})
   const [currentPage, setCurrentPage] = useState(1)
   const ITEMS_PER_PAGE = 8
 
@@ -351,9 +353,23 @@ export const VendorsScreen: React.FC = () => {
         (v.recipients && v.recipients.some((r) => r.toLowerCase().includes(query))) ||
         v.domain.toLowerCase().includes(query) ||
         v.country.toLowerCase().includes(query)
-      return matchesStatus && matchesSearch
+      const matchesFilters =
+        (!vendorFilters.vendor || v.name === vendorFilters.vendor) &&
+        (!vendorFilters.status || v.status === vendorFilters.status) &&
+        (!vendorFilters.country || v.country === vendorFilters.country)
+      return matchesStatus && matchesSearch && matchesFilters
     })
-  }, [vendors, searchTerm, statusFilter])
+  }, [vendors, searchTerm, statusFilter, vendorFilters])
+
+  // Filter options are built from the vendors currently in the directory
+  const vendorFilterFields = useMemo(() => {
+    const unique = (values: string[]) => [...new Set(values)].sort((a, b) => a.localeCompare(b))
+    return [
+      { key: 'vendor', label: 'Vendor name', options: unique(vendors.map((v) => v.name)) },
+      { key: 'status', label: 'Status', options: unique(vendors.map((v) => v.status)) },
+      { key: 'country', label: 'Country', options: unique(vendors.map((v) => v.country)) },
+    ]
+  }, [vendors])
 
   const totalPages = Math.ceil(filteredVendors.length / ITEMS_PER_PAGE) || 1
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
@@ -639,6 +655,14 @@ export const VendorsScreen: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3 w-full sm:w-auto">
+          <FilterMenu
+            fields={vendorFilterFields}
+            values={vendorFilters}
+            onChange={(values) => {
+              setVendorFilters(values)
+              setCurrentPage(1)
+            }}
+          />
           <div className="relative w-full sm:w-72">
             <Search className="w-4 h-4 text-[#64748b] absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
@@ -724,8 +748,8 @@ export const VendorsScreen: React.FC = () => {
           <table className="w-full text-left text-sm border-collapse">
             <thead>
               <tr className="bg-[#f8fafc] border-b border-[#e2e8f0] text-[#64748b] text-xs font-bold">
-                <th className="py-3.5 px-5 whitespace-nowrap">Case ID</th>
                 <th className="py-3.5 px-5">Vendor Name</th>
+                <th className="py-3.5 px-5 whitespace-nowrap">Case ID</th>
                 <th className="py-3.5 px-5">Domain</th>
                 <th className="py-3.5 px-5">Recipients</th>
                 <th className="py-3.5 px-5">Country</th>
@@ -736,9 +760,6 @@ export const VendorsScreen: React.FC = () => {
             <tbody className="divide-y divide-[#e2e8f0]/60">
               {isAddingVendor && (
                 <tr className="bg-[#ddf7f9]/30 border-b border-[#36c0c9]/40 animate-pulse">
-                  <td className="py-4 px-5 text-xs font-bold text-[#0d212c] whitespace-nowrap">
-                    {getNextCaseId(vendors)}
-                  </td>
                   <td className="py-4 px-5 font-semibold text-xs text-[#0d212c]">
                     <div className="flex items-center gap-2.5">
                       <Loader2 className="w-4 h-4 animate-spin text-[#36c0c9] shrink-0" />
@@ -749,6 +770,9 @@ export const VendorsScreen: React.FC = () => {
                         </span>
                       </div>
                     </div>
+                  </td>
+                  <td className="py-4 px-5 text-xs font-bold text-[#0d212c] whitespace-nowrap">
+                    {getNextCaseId(vendors)}
                   </td>
                   <td className="py-4 px-5 text-xs text-[#64748b] italic">Processing domain...</td>
                   <td className="py-4 px-5 text-xs text-[#64748b]">
@@ -778,9 +802,6 @@ export const VendorsScreen: React.FC = () => {
                     key={vendor.id}
                     className="hover:bg-[#f8fafc] transition cursor-pointer group"
                   >
-                    <td className="py-4 px-5 text-xs font-bold text-[#0d212c] whitespace-nowrap">
-                      {vendor.caseId}
-                    </td>
                     <td className="py-4 px-5">
                       <div className="flex flex-col min-w-0 gap-[2px]">
                         <span
@@ -796,6 +817,9 @@ export const VendorsScreen: React.FC = () => {
                           {vendor.legalName}
                         </span>
                       </div>
+                    </td>
+                    <td className="py-4 px-5 text-xs font-bold text-[#0d212c] whitespace-nowrap">
+                      {vendor.caseId}
                     </td>
 
                     <td className="py-4 px-5 text-xs">
