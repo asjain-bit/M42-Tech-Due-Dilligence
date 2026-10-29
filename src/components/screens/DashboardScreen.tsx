@@ -297,12 +297,8 @@ export const DashboardScreen: React.FC = () => {
         item.round.toLowerCase().includes(searchTerm.toLowerCase())
       const matchesFilters =
         (!assessmentFilters.vendor || item.vendor === assessmentFilters.vendor) &&
-        (!assessmentFilters.status || STATUS_LABELS[item.status] === assessmentFilters.status) &&
         (!assessmentFilters.confidence || item.score === assessmentFilters.confidence) &&
-        (!assessmentFilters.questionnaire ||
-          item.questionnaire === assessmentFilters.questionnaire) &&
-        (!assessmentFilters.rounds ||
-          (assessmentFilters.rounds === 'Multiple rounds') === Boolean(item.pastRounds?.length))
+        (!assessmentFilters.questionnaire || item.questionnaire === assessmentFilters.questionnaire)
       return matchesStatus && matchesSearch && matchesFilters
     })
   }, [assessments, selectedStatusFilter, searchTerm, assessmentFilters])
@@ -312,18 +308,12 @@ export const DashboardScreen: React.FC = () => {
     const unique = (values: string[]) => [...new Set(values)].sort((a, b) => a.localeCompare(b))
     return [
       { key: 'vendor', label: 'Vendor name', options: unique(assessments.map((a) => a.vendor)) },
-      {
-        key: 'status',
-        label: 'Status',
-        options: unique(assessments.map((a) => STATUS_LABELS[a.status])),
-      },
       { key: 'confidence', label: 'Confidence', options: ['High', 'Medium', 'Low'] },
       {
         key: 'questionnaire',
         label: 'Questionnaire',
         options: unique(assessments.map((a) => a.questionnaire)),
       },
-      { key: 'rounds', label: 'Rounds', options: ['Single round', 'Multiple rounds'] },
     ]
   }, [assessments])
 

@@ -1594,7 +1594,7 @@ export const ConfigureVendorCallScreen: React.FC<ConfigureVendorCallScreenProps>
 
                           <div className="flex flex-col gap-1.5">
                             <label className="text-[11px] font-extrabold text-[#64748b] uppercase tracking-wider">
-                              QUESTION <span className="text-red-500 font-bold">*</span>
+                              QUESTION {q.requiredQuestion && <span className="text-red-500 font-bold">*</span>}
                             </label>
                             <div className="w-full px-4 py-2.5 rounded-xl border border-[#e2e8f0] bg-slate-50/50 text-xs font-medium text-[#0d212c]">
                               {q.question}
@@ -1603,7 +1603,7 @@ export const ConfigureVendorCallScreen: React.FC<ConfigureVendorCallScreenProps>
 
                           <div className="flex flex-col gap-1.5">
                             <label className="text-[11px] font-extrabold text-[#64748b] uppercase tracking-wider">
-                              RESPONSE CUE <span className="text-red-500 font-bold">*</span>
+                              RESPONSE CUE {q.requiredQuestion && <span className="text-red-500 font-bold">*</span>}
                             </label>
                             <div className="w-full px-4 py-2.5 rounded-xl border border-[#e2e8f0] bg-slate-50/50 text-xs font-medium text-[#0d212c] leading-relaxed">
                               {q.responseCue}

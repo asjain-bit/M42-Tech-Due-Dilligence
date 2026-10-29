@@ -523,7 +523,7 @@ export const CallRoomScreen: React.FC<CallRoomScreenProps> = ({
                   AI DISCLOSURE
                 </span>
                 <p className="text-xs text-[#64748b] leading-relaxed">
-                  I am an AI agent — not a human. I am conducting this structured vendor due-diligence assessment on behalf of M42/Malaffi across the relevant domain teams. This call is recorded and transcribed for assessment purposes. No audio recorded while the agent is on hold. By joining you consent to recording. AI voice processing is performed by Microsoft Azure outside the UAE as the EU/Sweden are recognised as adequate.
+                  I am an AI agent — not a human. I am conducting this structured vendor due-diligence assessment on behalf of M42/Malaffi across the relevant domain teams. This call is recorded and transcribed for assessment purposes. No audio and transcript is recorded while the agent is on hold. By joining you consent to recording. AI voice processing is performed by Microsoft Azure outside the UAE as the EU/Sweden are recognised as adequate.
                 </p>
               </div>
 
@@ -644,7 +644,7 @@ export const CallRoomScreen: React.FC<CallRoomScreenProps> = ({
                       AI DISCLOSURE
                     </span>
                     <p className="text-xs text-[#64748b] leading-relaxed">
-                      I am an AI agent — not a human. I am conducting this structured vendor due-diligence assessment on behalf of M42/Malaffi across the relevant domain teams. This call is recorded and transcribed for assessment purposes. No audio recorded while the agent is on hold. By joining you consent to recording. AI voice processing is performed by Microsoft Azure outside the UAE as the EU/Sweden are recognised as adequate.
+                      I am an AI agent — not a human. I am conducting this structured vendor due-diligence assessment on behalf of M42/Malaffi across the relevant domain teams. This call is recorded and transcribed for assessment purposes. No audio and transcript is recorded while the agent is on hold. By joining you consent to recording. AI voice processing is performed by Microsoft Azure outside the UAE as the EU/Sweden are recognised as adequate.
                     </p>
                   </div>
 

@@ -387,7 +387,7 @@ export const QuestionnaireDetailScreen: React.FC<QuestionnaireDetailScreenProps>
             {/* Requirement 1: QUESTION Input Field (View-only mode has no focus/click stroke interaction) */}
             <div className="flex flex-col gap-1.5">
               <label className="text-[11px] font-extrabold text-[#64748b] uppercase tracking-wider">
-                QUESTION <span className="text-red-500 font-bold">*</span>
+                QUESTION {q.requiredQuestion && <span className="text-red-500 font-bold">*</span>}
               </label>
               <input
                 type="text"
@@ -406,7 +406,7 @@ export const QuestionnaireDetailScreen: React.FC<QuestionnaireDetailScreenProps>
             {/* Requirement 1: RESPONSE CUE Textarea (View-only mode has no focus/click stroke interaction) */}
             <div className="flex flex-col gap-1.5">
               <label className="text-[11px] font-extrabold text-[#64748b] uppercase tracking-wider">
-                RESPONSE CUE <span className="text-red-500 font-bold">*</span>
+                RESPONSE CUE {q.requiredQuestion && <span className="text-red-500 font-bold">*</span>}
               </label>
               <textarea
                 value={q.responseCue}
