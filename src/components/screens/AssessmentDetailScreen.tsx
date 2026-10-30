@@ -862,7 +862,7 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
       {showEmailVendorModal && (
         <div className="fixed inset-0 z-50 bg-[#0d212c]/40 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-3xl w-full h-[85vh] shadow-2xl border border-[#e2e8f0] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            <div className="px-8 pt-7 pb-5 flex items-start justify-between gap-4 border-b border-[#e2e8f0]">
+            <div className="mx-8 pt-7 pb-5 flex items-start justify-between gap-4 border-b border-[#e2e8f0]">
               <div className="flex flex-col gap-1">
                 <h3 className="text-lg font-extrabold text-[#0d212c]">Email Vendor</h3>
                 <span className="text-xs text-[#64748b] leading-relaxed">
@@ -879,7 +879,8 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
               </button>
             </div>
 
-            <div className="px-8 py-4 flex flex-col gap-3 border-b border-[#e2e8f0]">
+            <div className="px-8 pt-5 pb-2 flex flex-col gap-3">
+              <span className="text-sm font-extrabold text-[#0d212c]">Questions</span>
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-2 flex-wrap">
                   {[null, ...CONFIDENCE_OPTIONS.map(({ level }) => level)].map((level) => {
@@ -892,7 +893,7 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
                         aria-pressed={isActive}
                         className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition cursor-pointer ${
                           isActive
-                            ? 'bg-[#ddf7f9] border-[#36c0c9]/30 text-[#0d7280]'
+                            ? 'bg-[#36c0c9] border-[#36c0c9] text-white'
                             : 'bg-white border-[#e2e8f0] text-[#64748b] hover:border-[#cbd5e1] hover:text-[#0d212c]'
                         }`}
                       >
@@ -1026,7 +1027,7 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
               )}
             </div>
 
-            <div className="px-8 py-4 flex items-center justify-between gap-3 border-t border-[#e2e8f0]">
+            <div className="mx-8 py-4 flex items-center justify-between gap-3 border-t border-[#e2e8f0]">
               <span className="text-xs text-[#64748b] font-medium">
                 {emailSelectedQuestions.length} selected
               </span>
