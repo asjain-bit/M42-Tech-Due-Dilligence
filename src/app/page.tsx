@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'
 import { LoginScreen } from '@/components/screens/LoginScreen'
+import { VendorEvidenceUploaderScreen } from '@/components/screens/VendorEvidenceUploaderScreen'
 import { DashboardScreen } from '@/components/screens/DashboardScreen'
 import { QuestionnairesScreen } from '@/components/screens/QuestionnairesScreen'
 import { VendorsScreen } from '@/components/screens/VendorsScreen'
@@ -14,6 +15,8 @@ import { PageSkeletonLoader } from '@/components/molecules/PageSkeletonLoader'
 export default function HomePage() {
   // Default to false so the user lands on the SSO Login Screen first
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  // Vendor evidence uploader profile picked on the login screen
+  const [isVendorUploader, setIsVendorUploader] = useState(false)
   const [activeTab, setActiveTab] = useState<
     'dashboard' | 'questionnaires' | 'vendors' | 'agents' | 'usage-insights'
   >('dashboard')
@@ -43,8 +46,12 @@ export default function HomePage() {
     setIsAuthenticated(false)
   }
 
+  if (isVendorUploader) {
+    return <VendorEvidenceUploaderScreen onExit={() => setIsVendorUploader(false)} />
+  }
+
   if (!isAuthenticated) {
-    return <LoginScreen onLogin={handleLogin} />
+    return <LoginScreen onLogin={handleLogin} onVendorLogin={() => setIsVendorUploader(true)} />
   }
 
   const formattedName =
