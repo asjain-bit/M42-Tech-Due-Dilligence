@@ -9,6 +9,9 @@ import {
   RefreshCw,
   Folder,
   Info,
+  UserPlus,
+  Check,
+  X,
 } from 'lucide-react'
 import { StatusChip } from '@/components/atoms/StatusChip'
 import { SearchBar } from '@/components/molecules/SearchBar'
@@ -30,6 +33,15 @@ interface PastRound {
   createdDate: string
 }
 
+// Someone who is not on the invite list asking to join a scheduled call
+interface JoinRequest {
+  id: string
+  name: string
+  email: string
+  requestedAt: string
+  decision?: 'approved' | 'rejected'
+}
+
 interface AssessmentRow {
   id: string
   caseId: string
@@ -42,6 +54,7 @@ interface AssessmentRow {
   meetingDateTime?: string
   meetingLog?: MeetingLogEntry[]
   pastRounds?: PastRound[]
+  joinRequests?: JoinRequest[]
 }
 
 const STATUS_LABELS: Record<AssessmentStatus, string> = {
@@ -73,6 +86,8 @@ export const DashboardScreen: React.FC = () => {
   const [assessmentFilters, setAssessmentFilters] = useState<Record<string, string>>({})
   // Cases whose earlier rounds are expanded in the table
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({})
+  // Scheduled assessment whose join requests popup is open
+  const [joinRequestsRowId, setJoinRequestsRowId] = useState<string | null>(null)
 
   // Show 8 rows per page consistently across all tables
   const [currentPage, setCurrentPage] = useState(1)
@@ -129,6 +144,26 @@ export const DashboardScreen: React.FC = () => {
       status: 'scheduled',
       score: '-',
       createdDate: '20 Aug 2026, 04:20 PM',
+      joinRequests: [
+        {
+          id: 'jr-1',
+          name: 'Omar Haddad',
+          email: 'omar.haddad@apexsystems.com',
+          requestedAt: '20 Aug 2026, 05:02 PM',
+        },
+        {
+          id: 'jr-2',
+          name: 'Priya Menon',
+          email: 'priya.menon@apexsystems.com',
+          requestedAt: '20 Aug 2026, 05:10 PM',
+        },
+        {
+          id: 'jr-3',
+          name: 'Daniel Brooks',
+          email: 'd.brooks@gmail.com',
+          requestedAt: '20 Aug 2026, 05:18 PM',
+        },
+      ],
     },
     {
       id: 'ast-5',
@@ -316,6 +351,26 @@ export const DashboardScreen: React.FC = () => {
       },
     ]
   }, [assessments])
+
+  const joinRequestsRow = assessments.find((a) => a.id === joinRequestsRowId)
+
+  const decideJoinRequest = (
+    rowId: string,
+    requestId: string,
+    decision: 'approved' | 'rejected'
+  ) =>
+    setAssessments((prev) =>
+      prev.map((a) =>
+        a.id === rowId
+          ? {
+              ...a,
+              joinRequests: a.joinRequests?.map((r) =>
+                r.id === requestId ? { ...r, decision } : r
+              ),
+            }
+          : a
+      )
+    )
 
   const openAssessment = (row: AssessmentRow, round?: PastRound) => {
     const source = round ? { ...row, ...round } : row
@@ -547,6 +602,8 @@ export const DashboardScreen: React.FC = () => {
                 paginatedAssessments.map((row) => {
                   const hasPastRounds = Boolean(row.pastRounds?.length)
                   const isExpanded = hasPastRounds && Boolean(expandedRows[row.id])
+                  const pendingRequests =
+                    row.joinRequests?.filter((r) => !r.decision).length ?? 0
                   return (
                     <React.Fragment key={row.id}>
                       <tr
@@ -595,7 +652,26 @@ export const DashboardScreen: React.FC = () => {
                         <td className="py-3.5 px-4 text-[#64748b] text-xs font-medium">
                           {row.createdDate}
                         </td>
-                        <td className="py-3.5 px-4 text-right">
+                        <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                          {row.status === 'scheduled' && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setJoinRequestsRowId(row.id)
+                              }}
+                              aria-label={`Join requests for ${row.caseId}`}
+                              title="Join requests"
+                              className="relative w-7 h-7 border-0 bg-transparent p-0 text-[#b06000] hover:text-[#8a4b00] inline-flex items-center justify-center transition cursor-pointer align-middle"
+                            >
+                              <UserPlus className="w-4 h-4 stroke-[2.5]" />
+                              {pendingRequests > 0 && (
+                                <span className="absolute -top-0.5 -right-0.5 min-w-3.5 h-3.5 px-0.5 rounded-full bg-[#f59e0b] text-white text-[9px] font-bold flex items-center justify-center">
+                                  {pendingRequests}
+                                </span>
+                              )}
+                            </button>
+                          )}
                           {hasPastRounds && (
                             <button
                               type="button"
@@ -722,6 +798,76 @@ export const DashboardScreen: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Join requests popup for a scheduled call */}
+      {joinRequestsRow && (
+        <div className="fixed inset-0 z-50 bg-[#0d212c]/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="relative bg-white rounded-3xl max-w-lg w-full p-7 shadow-2xl border border-[#e2e8f0] flex flex-col gap-4 max-h-[90vh] animate-in fade-in zoom-in-95 duration-150">
+            <button
+              onClick={() => setJoinRequestsRowId(null)}
+              className="absolute top-5 right-5 p-1 rounded-lg text-slate-400 hover:text-[#0d212c] transition cursor-pointer bg-transparent border-0"
+              aria-label="Close"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <h3 className="text-lg font-extrabold text-[#0d212c]">Join requests</h3>
+
+            <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-[#e2e8f0]/80">
+              {!joinRequestsRow.joinRequests?.length ? (
+                <p className="py-8 text-center text-xs text-[#64748b]">
+                  No one has requested to join this call.
+                </p>
+              ) : (
+                joinRequestsRow.joinRequests.map((request) => (
+                  <div key={request.id} className="flex items-center gap-3 py-3">
+                    <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                      <span className="text-xs font-bold text-[#0d212c] truncate">
+                        {request.name}
+                      </span>
+                      <span className="text-[11px] text-[#64748b] truncate">{request.email}</span>
+                      <span className="text-[10px] text-[#94a3b8]">
+                        Requested {request.requestedAt}
+                      </span>
+                    </div>
+                    {request.decision ? (
+                      <StatusChip
+                        label={request.decision === 'approved' ? 'Approved' : 'Rejected'}
+                        status={request.decision === 'approved' ? 'success' : 'error'}
+                        dot={false}
+                      />
+                    ) : (
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            decideJoinRequest(joinRequestsRow.id, request.id, 'rejected')
+                          }
+                          aria-label={`Reject ${request.name}`}
+                          title="Reject"
+                          className="w-8 h-8 rounded-lg border border-[#fecaca] bg-[#fef2f2] text-[#dc2626] hover:bg-[#fee2e2] inline-flex items-center justify-center transition cursor-pointer"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            decideJoinRequest(joinRequestsRow.id, request.id, 'approved')
+                          }
+                          aria-label={`Approve ${request.name}`}
+                          title="Approve"
+                          className="w-8 h-8 rounded-lg border border-[#bbf7d0] bg-[#f0fdf4] text-[#16a34a] hover:bg-[#dcfce7] inline-flex items-center justify-center transition cursor-pointer"
+                        >
+                          <Check className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

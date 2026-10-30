@@ -52,6 +52,8 @@ interface CallRoomScreenProps {
 // Seconds the agent spends on each question in the simulated call
 const QUESTION_STEP_SECONDS = 20
 const QUESTION_ALERT_DELAY_SECONDS = 3
+// Vendor emails already on the call invite list (test email for the demo)
+const VENDOR_INVITED_EMAILS = ['zaidm42@gmail.com']
 
 // Sample questionnaire transcript
 const sampleTranscript: TranscriptEntry[] = [
@@ -579,6 +581,10 @@ export const CallRoomScreen: React.FC<CallRoomScreenProps> = ({
           (() => {
             const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(vendorEmailInput.trim())
             const isFormValid = vendorNameInput.trim() !== '' && isEmailValid
+            // Emails outside the invite list trigger a join request to the admin
+            const isUninvitedEmail =
+              isEmailValid &&
+              !VENDOR_INVITED_EMAILS.includes(vendorEmailInput.trim().toLowerCase())
 
             return (
               <div className="relative w-full max-w-[420px]">
@@ -618,6 +624,9 @@ export const CallRoomScreen: React.FC<CallRoomScreenProps> = ({
                           A 4-digit OTP will be sent to your email for verification.
                         </div>
                       </div>
+                      <span className="ml-auto text-[10px] text-[#94a3b8] font-normal">
+                        Test email: {VENDOR_INVITED_EMAILS[0]}
+                      </span>
                     </div>
 
                     <input
@@ -634,6 +643,14 @@ export const CallRoomScreen: React.FC<CallRoomScreenProps> = ({
                     {vendorEmailInput.trim() !== '' && !isEmailValid && (
                       <p className="text-[11px] text-red-500 font-medium animate-in fade-in duration-150">
                         Please enter a valid email address.
+                      </p>
+                    )}
+                    {isUninvitedEmail && (
+                      <p className="flex items-start gap-1.5 text-[11px] text-red-500 font-medium leading-snug animate-in fade-in duration-150">
+                        <Info className="w-3.5 h-3.5 shrink-0 mt-px" />
+                        This recipient has not been added to the list, so we have sent a request to
+                        the admin. You will be able to join the call once the admin accepts your
+                        request.
                       </p>
                     )}
                   </div>

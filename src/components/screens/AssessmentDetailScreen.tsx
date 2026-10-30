@@ -28,6 +28,7 @@ import {
   AlertTriangle,
   X,
   Pencil,
+  Search,
 } from 'lucide-react'
 import { StatusChip } from '@/components/atoms/StatusChip'
 
@@ -260,6 +261,29 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
     Boolean(rescheduleStart && rescheduleEnd) && rescheduleEnd > rescheduleStart
   const isRescheduleValid =
     Boolean(rescheduleDate) && isRescheduleTimeValid && rescheduleRecipients.length > 0
+
+  // Email Vendor: reviewer picks questions to send to the vendor for follow-up
+  const [showEmailVendorModal, setShowEmailVendorModal] = useState(false)
+  const [emailQuestionSearch, setEmailQuestionSearch] = useState('')
+  const [emailConfidenceFilter, setEmailConfidenceFilter] = useState<ConfidenceLevel | null>(null)
+  const [emailSelectedQuestions, setEmailSelectedQuestions] = useState<number[]>([])
+
+  const openEmailVendorModal = () => {
+    setEmailQuestionSearch('')
+    setEmailConfidenceFilter(null)
+    setEmailSelectedQuestions([])
+    setShowEmailVendorModal(true)
+  }
+
+  // Keep the page behind the Email Vendor popup from scrolling
+  useEffect(() => {
+    if (!showEmailVendorModal) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [showEmailVendorModal])
 
   const showTimedToast = (message: string) => {
     setToastMessage(message)
@@ -729,6 +753,42 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
     }
   })
 
+  const emailVendorQuestions = questions.filter((q) => {
+    const term = emailQuestionSearch.trim().toLowerCase()
+    const matchesSearch =
+      !term ||
+      q.question.toLowerCase().includes(term) ||
+      q.category.toLowerCase().includes(term) ||
+      String(q.id) === term
+    const matchesConfidence =
+      !emailConfidenceFilter ||
+      (q.answer !== '(not answered)' && q.confidence === emailConfidenceFilter)
+    return matchesSearch && matchesConfidence
+  })
+  const allEmailQuestionsSelected =
+    emailVendorQuestions.length > 0 &&
+    emailVendorQuestions.every((q) => emailSelectedQuestions.includes(q.id))
+
+  const toggleEmailQuestion = (questionId: number) =>
+    setEmailSelectedQuestions((prev) =>
+      prev.includes(questionId) ? prev.filter((id) => id !== questionId) : [...prev, questionId]
+    )
+
+  const toggleAllEmailQuestions = () => {
+    const visibleIds = emailVendorQuestions.map((q) => q.id)
+    setEmailSelectedQuestions((prev) =>
+      allEmailQuestionsSelected
+        ? prev.filter((id) => !visibleIds.includes(id))
+        : Array.from(new Set([...prev, ...visibleIds]))
+    )
+  }
+
+  const handleSendVendorEmail = () => {
+    const count = emailSelectedQuestions.length
+    setShowEmailVendorModal(false)
+    showTimedToast(`Emailed ${count} question${count === 1 ? '' : 's'} to ${assessment.vendor}`)
+  }
+
   // After the TDD round the agent suggests a follow-up privacy assessment: PIA when personal
   // information is processed, DPIA for high-risk solutions
   const showPrivacySuggestion =
@@ -798,6 +858,197 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
           <span>{toastMessage}</span>
         </div>
       )}{' '}
+      {/* Email Vendor Modal */}
+      {showEmailVendorModal && (
+        <div className="fixed inset-0 z-50 bg-[#0d212c]/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-3xl w-full h-[85vh] shadow-2xl border border-[#e2e8f0] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="px-8 pt-7 pb-5 flex items-start justify-between gap-4 border-b border-[#e2e8f0]">
+              <div className="flex flex-col gap-1">
+                <h3 className="text-lg font-extrabold text-[#0d212c]">Email Vendor</h3>
+                <span className="text-xs text-[#64748b] leading-relaxed">
+                  The selected questions will trigger agent to send a follow up email to vendor to
+                  provide the answers/required attachments of the same.
+                </span>
+              </div>
+              <button
+                onClick={() => setShowEmailVendorModal(false)}
+                className="p-1 rounded-lg text-[#64748b] hover:text-[#0d212c] hover:bg-slate-50 transition cursor-pointer bg-transparent border-0"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="px-8 py-4 flex flex-col gap-3 border-b border-[#e2e8f0]">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {[null, ...CONFIDENCE_OPTIONS.map(({ level }) => level)].map((level) => {
+                    const isActive = emailConfidenceFilter === level
+                    return (
+                      <button
+                        key={level ?? 'all'}
+                        type="button"
+                        onClick={() => setEmailConfidenceFilter(level)}
+                        aria-pressed={isActive}
+                        className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition cursor-pointer ${
+                          isActive
+                            ? 'bg-[#ddf7f9] border-[#36c0c9]/30 text-[#0d7280]'
+                            : 'bg-white border-[#e2e8f0] text-[#64748b] hover:border-[#cbd5e1] hover:text-[#0d212c]'
+                        }`}
+                      >
+                        {level ? level.replace(' confidence', '') : 'All'}
+                      </button>
+                    )
+                  })}
+                </div>
+                <div className="relative w-56 shrink-0">
+                  <Search className="w-4 h-4 text-[#94a3b8] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={emailQuestionSearch}
+                    onChange={(e) => setEmailQuestionSearch(e.target.value)}
+                    placeholder="Search questions..."
+                    aria-label="Search questions"
+                    className="w-full pl-10 pr-4 py-1.5 rounded-xl border border-[#cbd5e1] text-xs font-medium text-[#0d212c] outline-none focus:border-[#94a3b8] bg-white"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={toggleAllEmailQuestions}
+                disabled={emailVendorQuestions.length === 0}
+                className="self-start text-xs font-semibold text-[#36c0c9] hover:text-[#2baab3] bg-transparent border-0 p-0 cursor-pointer disabled:text-[#cbd5e1] disabled:cursor-not-allowed"
+              >
+                {allEmailQuestionsSelected ? 'Deselect all' : 'Select all'}
+              </button>
+            </div>
+
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-8 divide-y divide-[#e2e8f0]/80">
+              {emailVendorQuestions.length === 0 ? (
+                <p className="py-8 text-center text-xs text-[#64748b]">
+                  No questions match your search.
+                </p>
+              ) : (
+                emailVendorQuestions.map((q) => {
+                  const isSelected = emailSelectedQuestions.includes(q.id)
+                  const evidenceFiles = questionFiles[q.id] || []
+                  const isLowConfidenceAnswer =
+                    q.answer !== '(not answered)' && q.confidence === 'Low confidence'
+                  const comment = questionComments[q.id]
+                  return (
+                    <label key={q.id} className="flex items-start gap-3 py-5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleEmailQuestion(q.id)}
+                        className="sr-only"
+                      />
+                      <div
+                        className={`mt-0.5 w-4 h-4 rounded-md flex items-center justify-center shrink-0 transition-all border ${
+                          isSelected
+                            ? 'bg-[#36c0c9] border-[#36c0c9]'
+                            : 'bg-white border-[#cbd5e1]'
+                        }`}
+                      >
+                        {isSelected && <Check className="w-3 h-3 text-white stroke-[3]" />}
+                      </div>
+                      <div className="flex-1 min-w-0 flex flex-col gap-2.5">
+                        <div className="flex items-start justify-between gap-4">
+                          <span className="text-xs font-bold text-[#0d212c] leading-snug">
+                            {q.id}. [{q.category}] {q.question}
+                          </span>
+                          {q.answer !== '(not answered)' && (
+                            <StatusChip
+                              label={q.confidence}
+                              status={q.confidenceType}
+                              dot={false}
+                              className="shrink-0"
+                            />
+                          )}
+                        </div>
+                        <p className="text-xs text-[#0d212c] leading-relaxed">
+                          <strong>Answer:</strong> {q.answer}
+                        </p>
+                        {q.research && (
+                          <div className="p-3 rounded-xl bg-[#f0fdf4] border border-[#bbf7d0] text-[11px] flex items-start justify-between gap-3">
+                            <span className="text-[#0d212c] leading-relaxed">
+                              <strong>Research:</strong> {q.research.text}
+                            </span>
+                            <span className="px-2 py-0.5 rounded bg-[#12b76a] text-white font-bold text-[10px] shrink-0">
+                              {q.research.status}
+                            </span>
+                          </div>
+                        )}
+                        {evidenceFiles.length > 0 && (
+                          <div className="flex flex-col gap-1.5">
+                            <span className="text-[11px] font-bold text-[#0d212c]">
+                              Evidence uploaded
+                            </span>
+                            {evidenceFiles.map((file) => (
+                              <div
+                                key={file.name}
+                                className="flex items-center gap-2 text-[11px] text-[#64748b]"
+                              >
+                                <Paperclip className="w-3.5 h-3.5 text-[#0d7280] shrink-0" />
+                                <span className="font-semibold text-[#0d212c] truncate">
+                                  {file.name}
+                                </span>
+                                <span className="shrink-0">
+                                  {file.size} · {file.date}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {isLowConfidenceAnswer && (
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[11px] font-bold text-[#0d212c]">Comment</span>
+                            {comment ? (
+                              <p className="text-[11px] text-[#64748b] leading-relaxed">
+                                {comment.text}
+                                <span className="text-[#94a3b8]">
+                                  {' '}
+                                  · {comment.author}, {comment.date}
+                                </span>
+                              </p>
+                            ) : (
+                              <p className="text-[11px] text-[#94a3b8] italic">
+                                No comment added yet.
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </label>
+                  )
+                })
+              )}
+            </div>
+
+            <div className="px-8 py-4 flex items-center justify-between gap-3 border-t border-[#e2e8f0]">
+              <span className="text-xs text-[#64748b] font-medium">
+                {emailSelectedQuestions.length} selected
+              </span>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setShowEmailVendorModal(false)}
+                  className="px-5 py-2.5 rounded-xl border border-[#e2e8f0] bg-white text-xs font-bold text-[#0d212c] hover:bg-slate-50 transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSendVendorEmail}
+                  disabled={emailSelectedQuestions.length === 0}
+                  className="px-5 py-2.5 rounded-xl bg-[#36c0c9] hover:bg-[#2badb6] text-white text-xs font-bold transition cursor-pointer border-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Send Email
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Cancel Meeting Modal */}
       {showCancelModal && (
         <div className="fixed inset-0 z-50 bg-[#0d212c]/40 backdrop-blur-xs flex items-center justify-center p-4">
@@ -1538,12 +1789,27 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold text-[#0d212c]">Questions</h3>
                 {!isScheduled && (
-                  <button
-                    onClick={() => setShowAnswerKey(!showAnswerKey)}
-                    className="px-4 py-2 rounded-xl text-xs font-bold border border-[#cbd5e1] hover:border-[#94a3b8] hover:bg-[#f8fafc] text-[#0d212c] bg-white transition cursor-pointer"
-                  >
-                    {showAnswerKey ? 'Hide answer key' : 'Show answer key'}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setShowAnswerKey(!showAnswerKey)}
+                      className="px-2 py-2 text-xs font-bold text-[#36c0c9] hover:text-[#2baab3] bg-transparent border-0 transition cursor-pointer"
+                    >
+                      {showAnswerKey ? 'Hide answer key' : 'Show answer key'}
+                    </button>
+                    {currentStatus !== 'finalised' && (
+                      <div className="relative group">
+                        <button
+                          onClick={openEmailVendorModal}
+                          className="px-4 py-2 rounded-xl text-xs font-bold border border-[#36c0c9]/30 bg-[#ddf7f9] hover:bg-[#c9f1f4] text-[#0d7280] transition cursor-pointer"
+                        >
+                          Email Vendor
+                        </button>
+                        <div className="pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 absolute right-0 bottom-full mb-2 z-40 w-60 bg-[#0d212c] text-white text-xs p-3 rounded-xl shadow-xl border border-white/10 text-left leading-relaxed font-normal">
+                          Opens a modal to select the questions for following up on the vendor.
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
 
