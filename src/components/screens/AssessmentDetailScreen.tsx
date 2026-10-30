@@ -901,6 +901,28 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
                       </button>
                     )
                   })}
+                  <span className="w-px h-5 bg-[#e2e8f0] mx-2" aria-hidden="true" />
+                  <button
+                    type="button"
+                    role="checkbox"
+                    aria-checked={allEmailQuestionsSelected}
+                    onClick={toggleAllEmailQuestions}
+                    disabled={emailVendorQuestions.length === 0}
+                    className="inline-flex items-center gap-2 bg-transparent border-0 p-0 text-xs font-bold text-[#0d212c] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <span
+                      className={`w-4 h-4 rounded-md flex items-center justify-center shrink-0 transition-all border ${
+                        allEmailQuestionsSelected
+                          ? 'bg-[#36c0c9] border-[#36c0c9]'
+                          : 'bg-white border-[#cbd5e1]'
+                      }`}
+                    >
+                      {allEmailQuestionsSelected && (
+                        <Check className="w-3 h-3 text-white stroke-[3]" />
+                      )}
+                    </span>
+                    Select all
+                  </button>
                 </div>
                 <div className="relative w-56 shrink-0">
                   <Search className="w-4 h-4 text-[#94a3b8] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -914,15 +936,6 @@ export const AssessmentDetailScreen: React.FC<AssessmentDetailScreenProps> = ({
                   />
                 </div>
               </div>
-
-              <button
-                type="button"
-                onClick={toggleAllEmailQuestions}
-                disabled={emailVendorQuestions.length === 0}
-                className="self-start text-xs font-semibold text-[#36c0c9] hover:text-[#2baab3] bg-transparent border-0 p-0 cursor-pointer disabled:text-[#cbd5e1] disabled:cursor-not-allowed"
-              >
-                {allEmailQuestionsSelected ? 'Deselect all' : 'Select all'}
-              </button>
             </div>
 
             <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-8 divide-y divide-[#e2e8f0]/80">
